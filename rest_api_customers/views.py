@@ -16,6 +16,7 @@ from rest_framework.throttling import UserRateThrottle
 import requests
 import time
 
+
 # Create your views here.
 class ShipmentTrackingAPIView(APIView):
     permission_classes = [AllowAny, ]
@@ -25,12 +26,12 @@ class ShipmentTrackingAPIView(APIView):
         barcode = request.query_params.get('barcode')
         if not barcode:
             return Response({"error": "Barcode parameter is required."}, status=status.HTTP_400_BAD_REQUEST)
-
         data = requests.get(f"https://prodapi.pochta.uz/api/v1/public/order/{barcode}")
         data = data.json()
         if data["data"]['locations'][0]['country']['code'] == 'UZ' and data["data"]['locations'][0]['country']['code'] == 'UZ':
-            return Response(data=data, status=status.HTTP_200_OK)
-        return Response(data=data.json(), status=status.HTTP_200_OK)
+            total_data = requests.get(f"https://prodapi.pochta.uz/api/v1/public/order/{barcode}/history_items")
+            return Response(data=total_data.json(), status=status.HTTP_200_OK)
+        return Response({"error": "Barcode isn't valid."}, status=status.HTTP_404_NOT_FOUND)
 
 
 class IsManagerOrReadOnly(BasePermission):
