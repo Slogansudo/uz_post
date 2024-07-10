@@ -4,7 +4,7 @@ from rest_framework.authtoken import views
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-from .views import ShipmentTrackingAPIView, Tracking
+from .views import ShipmentTrackingAPIView, Tracking, Barcode
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -26,6 +26,7 @@ urlpatterns = [
     path('docs-swagger/', schema_view.with_ui("swagger", cache_timeout=0), name='swagger'),
     path('docs-redoc/', schema_view.with_ui("redoc", cache_timeout=0), name='redoc'),
     path('tracking/', ShipmentTrackingAPIView.as_view(), name='tracing'),
-    path('track/', Tracking.as_view(), name='track')
-
+    path('track/', Tracking.as_view(), name='track'),
+    path('track/<slug:barcode>/', Barcode.as_view(), name='barcode'),
+    # path('tracking/<slug:barcode>/', Data.as_view(), name='data')
 ]

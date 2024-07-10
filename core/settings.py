@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     # new framework
     'ckeditor',
     'ckeditor_uploader',
+    'corsheaders',
     # framework
     'django_extensions',
     'import_export',
@@ -56,13 +57,15 @@ INSTALLED_APPS = [
     'models',
     'rest_api',
     'db_models',
-    'rest_api_customers'
+    'rest_api_customers',
 ]
 
 
 MIDDLEWARE = [
     #
     'core.middleware.LogIPMiddleware',
+    #
+    'corsheaders.middleware.CorsMiddleware',
     #
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -71,6 +74,15 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+    "http://localhost:3000",
+    "http://127.0.0.1:8000",
+    "http://srmslogan.uz",
+    "http://178.62.72.228",
+    "file://",
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -130,7 +142,7 @@ SIMPLE_JWT = {
 
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv('ENGINE'),
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv('NAME'),
         "USER": os.getenv('USER'),
         "PASSWORD": os.getenv('PASSWORD'),

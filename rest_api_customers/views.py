@@ -76,3 +76,45 @@ class Tracking(APIView):
                 total_data.append(response2.json())
         return Response(total_data, status=status.HTTP_200_OK)
 
+
+class Barcode(APIView):
+    throttle_classes = [UserRateThrottle, ]
+
+    def get(self, request, barcode):
+
+        data = requests.get(f"https://prodapi.pochta.uz/api/v1/public/order/{barcode}")
+        data = data.json()
+        if data['status'] != "success":
+            return Response(data=data, status=status.HTTP_404_NOT_FOUND)
+        if data["data"]['locations'][0]['country']['code'] == 'UZ' and data["data"]['locations'][0]['country']['code'] == 'UZ':
+            total_data = requests.get(f"https://prodapi.pochta.uz/api/v1/public/order/{barcode}/history_items")
+            return Response(data=total_data.json(), status=status.HTTP_200_OK)
+
+        url1 = f"https://gdeposylka.ru/api/v4/tracker/detect/{barcode}"
+        headers = {
+            "X-Authorization-Token": "65bbbac85f796f8032e0874411f4d1f5af7185a99e184709bf0c1f38d95486fa2338733760a48704"
+        }
+        response1 = requests.get(url1, headers=headers)
+        data = response1.json()
+        total_data = []
+        for item in data['data']:
+            url2 = f"https://gdeposylka.ru/api/v4/tracker/{item['courier']['slug']}/{barcode}"
+            response2 = requests.get(url2, headers=headers)
+            response_x = response2.json()
+            if len(response_x["messages"]) == 0:
+                total_data.append(response2.json())
+            else:
+                time.sleep(15)
+                response2 = requests.get(url2, headers=headers)
+                total_data.append(response2.json())
+        return Response(total_data, status=status.HTTP_200_OK)
+
+
+# class Data(APIView):
+#     permission_classes = [AllowAny, ]
+#     def get(self, request, barcode):
+#         print(barcode)
+#         url1 = f"http://165.232.40.190/api/v1/public/track/{barcode}/"
+#         response1 = requests.get(url1)
+#         data = response1.json()
+#         return Response(data, status=status.HTTP_200_OK)
