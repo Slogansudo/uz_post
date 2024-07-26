@@ -26,7 +26,7 @@ schema_view = get_schema_view(
         license=openapi.License(name='demo service')
     ),
     public=True,
-    permission_classes=(permissions.IsAdminUser, )
+    permission_classes=(permissions.IsAuthenticated, )
 )
 
 router = DefaultRouter()
@@ -63,7 +63,7 @@ router.register("shablon-uz-post-tel_number", viewset=ShablonUzPostTelNumberAPIV
 router.register("shablon-contact-special-title", viewset=ShablonContactSpecialTitleAPIViewSet)
 router.register("contact", viewset=ContactAPIViewSet)
 router.register("advertisements", viewset=AdvertisementsAPIViewSet)
-router.register("organik-managements", viewset=OrganicManagementsAPIViewSet)
+router.register("organic-managements", viewset=OrganicManagementsAPIViewSet)
 router.register("partners", viewset=PartnersAPIViewSet)
 router.register("regional-branches", viewset=RegionalBranchesAPIViewSet)
 router.register("advertising", viewset=AdvertisingAPIViewSet)
@@ -87,5 +87,6 @@ urlpatterns = [
     path('users-requests/<int:id>/', UsersRequestsDetailView.as_view(), name='user-requests-detail'),
     path('docs-swagger/', schema_view.with_ui("swagger", cache_timeout=0), name='swagger'),
     path('docs-redoc/', schema_view.with_ui("redoc", cache_timeout=0), name='redoc'),
+    path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
 ]
 

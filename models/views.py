@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.views import View
 import requests
+from django.shortcuts import render
 
 
 class IndexView(View):

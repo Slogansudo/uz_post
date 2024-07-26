@@ -8,10 +8,29 @@ from db_models.models import (Banners, MenuElements, Menu, StatisticItems, Stati
                               ShablonContactSpecialTitle, Contact, Advertisements, OrganicManagements, Partners,
                               RegionalBranches, Advertising, InformationAboutIssuer, Slides, SocialMedia, EssentialFacts,
                               Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings)
+from django.db import transaction
+from django.contrib.auth.models import Group, Permission
+
+
+class PermissionsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permission
+        fields = '__all__'
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    permissions = PermissionsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Group
+        fields = '__all__'
+        read_only_fields = ["id"]
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
     # Userlar ro'yhatini ko'rish yangi user qo'shish o'chirish imkonini beruvchi serializer
+    groups = GroupSerializer(many=True, read_only=True)
+
     class Meta:
         model = CustomUser
         fields = "__all__"
@@ -35,17 +54,15 @@ class BannersSerializer(serializers.ModelSerializer):
 
 class MenuElementsSerializer(serializers.ModelSerializer):
     # menu elements jadvali uchun serializer
-    banner = BannersSerializer()
 
     class Meta:
         model = MenuElements
         fields = "__all__"
-        read_only_fields = ["id"]
+
 
 class MenuSerializer(serializers.ModelSerializer):
     # menu jadvali uchun  serializer class
-    menu_elements = MenuElementsSerializer(many=True)
-
+    menu_elements = MenuElementsSerializer(many=True, read_only=True)
     class Meta:
         model = Menu
         fields = "__all__"
@@ -53,7 +70,6 @@ class MenuSerializer(serializers.ModelSerializer):
 
 
 class StatisticItemsSerializer(serializers.ModelSerializer):
-    # statistics jadvali uchun  serializer
     class Meta:
         model = StatisticItems
         fields = "__all__"
@@ -61,8 +77,7 @@ class StatisticItemsSerializer(serializers.ModelSerializer):
 
 
 class StatisticsSerializer(serializers.ModelSerializer):
-
-    statistic_items = StatisticItemsSerializer(many=True)
+    statistic_items = StatisticItemsSerializer(many=True, read_only=True)
 
     class Meta:
         model = Statistics
@@ -106,64 +121,11 @@ class TegBranches2Serializer(serializers.ModelSerializer):
 
 
 class VacanciesSerializer(serializers.ModelSerializer):
-    teg_vacancies = TegVacanciesSerializer(many=True)
-    teg_experiences = TegExperiencesSerializer(many=True)
-    teg_regions = TegRegionsSerializer(many=True)
 
     class Meta:
         model = Vacancies
         fields = "__all__"
         read_only_fields = ["id"]
-
-    def create(self, validated_data):
-        teg_vacancies_data = validated_data.pop('teg_vacancies')
-        teg_experiences_data = validated_data.pop('teg_experiences')
-        teg_regions_data = validated_data.pop('teg_regions')
-
-        vacancies = Vacancies.objects.create(**validated_data)
-
-        for teg_vacancy_data in teg_vacancies_data:
-            teg_vacancy, created = TegVacancies.objects.get_or_create(**teg_vacancy_data)
-            vacancies.teg_vacancies.add(teg_vacancy)
-
-        for teg_experience_data in teg_experiences_data:
-            teg_experience, created = TegExperience.objects.get_or_create(**teg_experience_data)
-            vacancies.teg_experiences.add(teg_experience)
-
-        for teg_region_data in teg_regions_data:
-            teg_region, created = TegRegions.objects.get_or_create(**teg_region_data)
-            vacancies.teg_regions.add(teg_region)
-
-        return vacancies
-
-    def update(self, instance, validated_data):
-        teg_vacancies_data = validated_data.pop('teg_vacancies')
-        teg_experiences_data = validated_data.pop('teg_experiences')
-        teg_regions_data = validated_data.pop('teg_regions')
-
-        instance.title_ru = validated_data.get('title_ru', instance.title_ru)
-        instance.title_uz = validated_data.get('title_uz', instance.title_uz)
-        instance.description_ru = validated_data.get('description_ru', instance.description_ru)
-        instance.description_uz = validated_data.get('description_uz', instance.description_uz)
-        # Boshqa maydonlarni yangilang
-        instance.save()
-
-        instance.teg_vacancies.clear()
-        for teg_vacancy_data in teg_vacancies_data:
-            teg_vacancy, created = TegVacancies.objects.get_or_create(**teg_vacancy_data)
-            instance.teg_vacancies.add(teg_vacancy)
-
-        instance.teg_experiences.clear()
-        for teg_experience_data in teg_experiences_data:
-            teg_experience, created = TegExperience.objects.get_or_create(**teg_experience_data)
-            instance.teg_experiences.add(teg_experience)
-
-        instance.teg_regions.clear()
-        for teg_region_data in teg_regions_data:
-            teg_region, created = TegRegions.objects.get_or_create(**teg_region_data)
-            instance.teg_regions.add(teg_region)
-
-        return instance
 
 
 class PurchasesSerializer(serializers.ModelSerializer):
@@ -188,9 +150,6 @@ class SaveMediaFilesSerializer(serializers.ModelSerializer):
 
 
 class EventsSerializer(serializers.ModelSerializer):
-    video_preview = SaveMediaFilesSerializer(many=True)
-    video = SaveMediaFilesSerializer(many=True)
-    teg_branches = TegBranches2Serializer(many=True)
 
     class Meta:
         model = Events
@@ -199,12 +158,6 @@ class EventsSerializer(serializers.ModelSerializer):
 
 
 class UzPostNewsSerializer(serializers.ModelSerializer):
-    image_ru = SaveMediaFilesSerializer(many=True)
-    image_uz = SaveMediaFilesSerializer(many=True)
-    video_preview_ru = SaveMediaFilesSerializer(many=True)
-    video_preview_uz = SaveMediaFilesSerializer(many=True)
-    video_ru = SaveMediaFilesSerializer(many=True)
-    video_uz = SaveMediaFilesSerializer(many=True)
 
     class Meta:
         model = UzPostNews
@@ -228,7 +181,7 @@ class PagesSerializer(serializers.ModelSerializer):
 
 class BranchServicesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Branches
+        model = BranchServices
         fields = "__all__"
         read_only_fields = ["id"]
 
@@ -241,14 +194,11 @@ class ShablonServicesSerializer(serializers.ModelSerializer):
 
 
 class BranchesSerializer(serializers.ModelSerializer):
-    header_image = SaveMediaFilesSerializer(many=True)
-    branch_sidebar_image = SaveMediaFilesSerializer(many=True)
-    postal_service = ShablonServicesSerializer(many=True)
-    kurier_services = ShablonServicesSerializer(many=True)
-    additional_services = ShablonServicesSerializer(many=True)
-    contractual_services = ShablonServicesSerializer(many=True)
-    modern_ict_services = ShablonServicesSerializer(many=True)
-    working_days = TegWorkingDaysSerializer(many=True)
+    postal_service = ShablonServicesSerializer(many=True, read_only=True)
+    kurier_services = ShablonServicesSerializer(many=True, read_only=True)
+    additional_services = ShablonServicesSerializer(many=True, read_only=True)
+    contractual_services = ShablonServicesSerializer(many=True, read_only=True)
+    modern_ict_services = ShablonServicesSerializer(many=True, read_only=True)
 
     class Meta:
         model = Branches
@@ -334,9 +284,9 @@ class ShablonContactSpecialTitleSerializer(serializers.ModelSerializer):
 
 
 class ContactSerializer(serializers.ModelSerializer):
-    tel_number = ShablonUzPostTelNumberSerializer(many=True)
-    title_2 = ShablonContactSpecialTitleSerializer(many=True)
-    description_2 = ShablonContactSpecialTitleSerializer(many=True)
+    tel_number = ShablonUzPostTelNumberSerializer(many=True, read_only=True)
+    title_2 = ShablonContactSpecialTitleSerializer(many=True, read_only=True)
+    description_2 = ShablonContactSpecialTitleSerializer(many=True, read_only=True)
 
     class Meta:
         model = Contact
@@ -352,7 +302,6 @@ class AdvertisementsSerializer(serializers.ModelSerializer):
 
 
 class OrganicManagementsSerializer(serializers.ModelSerializer):
-    working_days = TegWorkingDaysSerializer(many=True)
 
     class Meta:
         model = OrganicManagements
@@ -361,8 +310,6 @@ class OrganicManagementsSerializer(serializers.ModelSerializer):
 
 
 class PartnersSerializer(serializers.ModelSerializer):
-    image_ru = SaveMediaFilesSerializer(many=True)
-    image_uz = SaveMediaFilesSerializer(many=True)
 
     class Meta:
         model = Partners

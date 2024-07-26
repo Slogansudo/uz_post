@@ -8,19 +8,19 @@ class CustomRateThrottle(SimpleRateThrottle):
     rate = '20/min'  # 20 requests per minute
 
     def get_cache_key(self, request, view):
-        # Use IP address as the cache key
         ident = self.get_ident(request)
+        url = request.path
         return self.cache_format % {
             'scope': self.scope,
-            'ident': ident
+            'ident': f"{ident}:{url}"
         }
 
     def allow_request(self, request, view):
-        # Get the identifier (IP address)
         ident = self.get_ident(request)
+        url = request.path
 
         # Retrieve or create IP address log
-        ip_log, created = IPAddressLog.objects.get_or_create(ip_address=ident)
+        ip_log, created = IPAddressLog.objects.get_or_create(ip_address=ident, url=url)
 
         # Get cache key and history of requests
         self.key = self.get_cache_key(request, view)
