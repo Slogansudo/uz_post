@@ -20,7 +20,7 @@ from .views import (Barcode, TrackIsAuth, RegisterUserView, MyProfileView, Users
                     InformationAboutIssuerAPIViewSet,
                     SlidesAPIViewSet, SocialMediaAPIViewSet, EssentialFactsAPIViewSet, RatesAPIViewSet,
                     ServicesAPIViewSet, CharterSocietyAPIViewSet,
-                    SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet)
+                    SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet, CategoryPagesViewSet, ControlCategoryPageViewSet)
 
 
 schema_view = get_schema_view(
@@ -55,6 +55,8 @@ router.register("events", viewset=EventsAPIViewSet)
 router.register("uz-post-news", viewset=UzPostNewsAPIViewSet)
 router.register("postal-services", viewset=PostalServicesAPIViewSet)
 router.register("pages", viewset=PagesAPIViewSet)
+router.register("category-pages", viewset=CategoryPagesViewSet)
+router.register("control-category-pages", viewset=ControlCategoryPageViewSet)
 router.register("branch-services", viewset=BranchServicesAPIViewSet)
 router.register("shablon-services", viewset=ShablonServicesAPIViewSet)
 router.register("branches", viewset=BranchesAPIViewSet)

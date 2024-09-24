@@ -6,7 +6,7 @@ from .models import (Banners, MenuElements, Menu, StatisticItems, Statistics, Te
                               Dividends, QuarterReports, UserInstructions, ExecutiveApparatus, ShablonUzPostTelNumber,
                               ShablonContactSpecialTitle, Contact, Advertisements, OrganicManagements, Partners,
                               RegionalBranches, Advertising, InformationAboutIssuer, Slides, SocialMedia, EssentialFacts,
-                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings)
+                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages)
 
 
 admin.site.register([Banners, MenuElements, Menu, StatisticItems, Statistics, TegRegions, TegWorkingDays,
@@ -16,5 +16,5 @@ admin.site.register([Banners, MenuElements, Menu, StatisticItems, Statistics, Te
                               Dividends, QuarterReports, UserInstructions, ExecutiveApparatus, ShablonUzPostTelNumber,
                               ShablonContactSpecialTitle, Contact, Advertisements, OrganicManagements, Partners,
                               RegionalBranches, Advertising, InformationAboutIssuer, Slides, SocialMedia, EssentialFacts,
-                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings])
+                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages])
 

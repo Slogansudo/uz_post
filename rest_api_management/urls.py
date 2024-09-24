@@ -13,7 +13,7 @@ from .views import (UsersAPIView, UsersDetailAPIView, UserRequestsView, UsersReq
                     ShablonContactSpecialTitleAPIViewSet, ContactAPIViewSet, AdvertisementsAPIViewSet, OrganicManagementsAPIViewSet,
                     PartnersAPIViewSet, RegionalBranchesAPIViewSet, AdvertisingAPIViewSet, InformationAboutIssuerAPIViewSet,
                     SlidesAPIViewSet, SocialMediaAPIViewSet, EssentialFactsAPIViewSet, RatesAPIViewSet, ServicesAPIViewSet, CharterSocietyAPIViewSet,
-                    SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet)
+                    SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet, CategoryPagesViewSet, ControlCategoryPageViewSet)
 
 
 router = DefaultRouter()
@@ -34,6 +34,8 @@ router.register("events", viewset=EventsAPIViewSet)
 router.register("uz-post-news", viewset=UzPostNewsAPIViewSet)
 router.register("postal-services", viewset=PostalServicesAPIViewSet)
 router.register("pages", viewset=PagesAPIViewSet)
+router.register("category-pages", viewset=CategoryPagesViewSet)
+router.register("control-category-pages", viewset=ControlCategoryPageViewSet)
 router.register("branch-services", viewset=BranchServicesAPIViewSet)
 router.register("shablon-services", viewset=ShablonServicesAPIViewSet)
 router.register("branches", viewset=BranchesAPIViewSet)

@@ -1,6 +1,8 @@
 from rest_framework.permissions import BasePermission
 from models.models import CustomUser
 
+
+
 #  id |    app_label    |           model
 # ----+-----------------+----------------------------
 #   1 | admin           | logentry
@@ -657,6 +659,75 @@ class ManagePages(BasePermission):
             if request.method in ('DELETE', 'OPTIONS') and "delete" in data.get("pages", []):
                 return True
         return False
+#########
+
+
+class ManageCategoryPages(BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        try:
+            exist_user = CustomUser.objects.get(id=user.id)
+        except CustomUser.DoesNotExist:
+            return False
+
+        # Foydalanuvchi hech qanday guruhga tegishli bo'lmasa, ruxsat berilmaydi
+        if not exist_user.groups.exists():
+            return False
+
+        # Ruxsatlar va tegishli content type modelini olish
+        permissions = [perm for group in exist_user.groups.all() for perm in group.permissions.all()]
+        data = {}
+        for perm in permissions:
+            data[perm.content_type.model] = []
+            for per in permissions:
+                if per.codename.split("_")[1] == perm.content_type.model:
+                     data[perm.content_type.model].append(per.codename.split("_")[0])
+
+        if 'categorypages' in data.keys():
+            if request.method in ('GET', 'OPTIONS') and "view" in data.get("categorypages", []):
+                return True
+            if request.method in ('POST', 'OPTIONS') and "add" in data.get("categorypages", []):
+                return True
+            if request.method in ('PUT', 'OPTIONS') and "change" in data.get("categorypages", []):
+                return True
+            if request.method in ('DELETE', 'OPTIONS') and "delete" in data.get("categorypages", []):
+                return True
+        return False
+
+
+class ManageControlCategoryPages(BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        try:
+            exist_user = CustomUser.objects.get(id=user.id)
+        except CustomUser.DoesNotExist:
+            return False
+
+        # Foydalanuvchi hech qanday guruhga tegishli bo'lmasa, ruxsat berilmaydi
+        if not exist_user.groups.exists():
+            return False
+
+        # Ruxsatlar va tegishli content type modelini olish
+        permissions = [perm for group in exist_user.groups.all() for perm in group.permissions.all()]
+        data = {}
+        for perm in permissions:
+            data[perm.content_type.model] = []
+            for per in permissions:
+                if per.codename.split("_")[1] == perm.content_type.model:
+                     data[perm.content_type.model].append(per.codename.split("_")[0])
+
+        if 'controlcategorypages' in data.keys():
+            if request.method in ('GET', 'OPTIONS') and "view" in data.get("controlcategorypages", []):
+                return True
+            if request.method in ('POST', 'OPTIONS') and "add" in data.get("controlcategorypages", []):
+                return True
+            if request.method in ('PUT', 'OPTIONS') and "change" in data.get("controlcategorypages", []):
+                return True
+            if request.method in ('DELETE', 'OPTIONS') and "delete" in data.get("controlcategorypages", []):
+                return True
+        return False
+
+#########
 
 
 class ManagePostalServices(BasePermission):
@@ -1714,4 +1785,5 @@ class ManageVacancies(BasePermission):
             if request.method in ('DELETE', 'OPTIONS') and "delete" in data.get("vacancies", []):
                 return True
         return False
+
 

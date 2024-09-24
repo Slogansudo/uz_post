@@ -27,7 +27,7 @@ from db_models.models import (Banners, MenuElements, Menu, StatisticItems, Stati
                               Dividends, QuarterReports, UserInstructions, ExecutiveApparatus, ShablonUzPostTelNumber,
                               ShablonContactSpecialTitle, Contact, Advertisements, OrganicManagements, Partners,
                               RegionalBranches, Advertising, InformationAboutIssuer, Slides, SocialMedia, EssentialFacts,
-                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings)
+                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages)
 
 from rest_api.serializes import (CustomUserSerializer, UsersRequestsSerializer, BannersSerializer, MenuElementsSerializer,
                         MenuSerializer, StatisticItemsSerializer, StatisticsSerializer, TegRegionsSerializer,
@@ -40,7 +40,7 @@ from rest_api.serializes import (CustomUserSerializer, UsersRequestsSerializer, 
                          ContactSerializer, AdvertisementsSerializer, OrganicManagementsSerializer, PartnersSerializer, RegionalBranchesSerializer,
                          AdvertisingSerializer, InformationAboutIssuerSerializer, SlidesSerializer, SocialMediaSerializer, EssentialFactsSerializer,
                          RatesSerializer, ServicesSerializer, CharterSocietySerializer, SecurityPapersSerializer, FAQSerializer,
-                         SiteSettingsSerializer)
+                         SiteSettingsSerializer, CategoryPagesSerializer, ControlCategoryPagesSerializer)
 
 from .helps import (IsManagerProfileOrReadOnly, UserRequestsOrReadOnly, ManageAdvertisements, ManageAdvertising,
                     ManageAnnualReports, ManageBanners, ManageBranchServices, ManageBusinessPlansCompleted,
@@ -52,7 +52,7 @@ from .helps import (IsManagerProfileOrReadOnly, UserRequestsOrReadOnly, ManageAd
                     ManageStatisticItems, ManageTegBranches2, ManageTegExperience, ManageTegRegions, ManageTegVacancies,
                     ManageTegWorkingdays, ManageThemaQuestions, ManageUserInstructions, ManageVacanciesImages,
                     ManageMenu, ManagePartners, ManageContact, ManageStatistics, ManageEvents, ManageOrganicmanagements,
-                    ManageBranches, ManageUzPostNews, ManageVacancies)
+                    ManageBranches, ManageUzPostNews, ManageVacancies, ManageCategoryPages, ManageControlCategoryPages)
 
 
 class CustomUserThrottle(UserRateThrottle):
@@ -746,6 +746,100 @@ class PagesAPIViewSet(ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save()
+
+
+class CategoryPagesViewSet(ModelViewSet):
+    queryset = CategoryPages.objects.all()
+    serializer_class = CategoryPagesSerializer
+    permission_classes = [IsAdminUser, ManageCategoryPages]
+    throttle_classes = [CustomUserThrottle, ]
+
+    @action(detail=True, methods=['post'])
+    def pages(self, request, *args, **kwargs):
+        category = self.get_object()
+        serializer = PagesSerializer(data=request.data)
+        if serializer.is_valid():
+            pages = serializer.save()
+            category.pages.add(pages)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @pages.mapping.put
+    def update_pages(self, request, *args, **kwargs):
+        id = request.data.get('id')
+        if type(id) != int or id is None:
+            return Response(data="Try to enter the correct id", status=status.HTTP_400_BAD_REQUEST)
+        category = self.get_object()
+        page = category.pages.filter(id=id).first()
+        if page is None:
+            return Response(data="postal service not found", status=status.HTTP_404_NOT_FOUND)
+        serializer = PagesSerializer(page, data=request.data)
+        if serializer.is_valid():
+            page_1 = serializer.save()
+            page_1.save()
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+
+    @pages.mapping.delete
+    def delete_pages(self, request, *args, **kwargs):
+        category = self.get_object()
+        id = request.data.get('id')
+        if type(id) != int:
+            return Response(data="You must enter the id as an int type", status=status.HTTP_400_BAD_REQUEST)
+        data = category.pages.filter(id=id)
+        if not data:
+            return Response(data="No such postal service", status=status.HTTP_404_NOT_FOUND)
+        category.pages.remove(data.first())
+        page = Pages.objects.get(id=id)
+        page.delete()
+        return Response(data="successful deleted", status=status.HTTP_204_NO_CONTENT)
+
+
+class ControlCategoryPageViewSet(ModelViewSet):
+    queryset = ControlCategoryPages.objects.all()
+    serializer_class = ControlCategoryPagesSerializer
+    permission_classes = [IsAdminUser, ManageControlCategoryPages]
+    throttle_classes = [CustomUserThrottle, ]
+
+    @action(detail=True, methods=['post'])
+    def category_pages(self, request, *args, **kwargs):
+        control_category = self.get_object()
+        serializer = CategoryPagesSerializer(data=request.data)
+        if serializer.is_valid():
+            category = serializer.save()
+            control_category.page_categories.add(category)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @category_pages.mapping.put
+    def update_category_page(self, request, *args, **kwargs):
+        id = request.data.get('id')
+        if type(id) != int or id is None:
+            return Response(data="Try to enter the correct id", status=status.HTTP_400_BAD_REQUEST)
+        control_category_page = self.get_object()
+        page = control_category_page.page_categories.filter(id=id).first()
+        if page is None:
+            return Response(data="category page not found", status=status.HTTP_404_NOT_FOUND)
+        serializer = CategoryPagesSerializer(page, data=request.data)
+        if serializer.is_valid():
+            page_1 = serializer.save()
+            page_1.save()
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+
+    @category_pages.mapping.delete
+    def delete_category_page(self, request, *args, **kwargs):
+        controlcategory = self.get_object()
+        id = request.data.get('id')
+        if type(id) != int:
+            return Response(data="You must enter the id as an int type", status=status.HTTP_400_BAD_REQUEST)
+        data = controlcategory.page_categories.filter(id=id)
+        if not data:
+            return Response(data="No such category pages", status=status.HTTP_404_NOT_FOUND)
+        controlcategory.page_categories.remove(data.first())
+        category_page = CategoryPages.objects.get(id=id)
+        category_page.delete()
+        return Response(data="successful deleted", status=status.HTTP_204_NO_CONTENT)
 
 
 class BranchServicesAPIViewSet(ModelViewSet):

@@ -450,6 +450,34 @@ class Pages(models.Model):
         ]
 
 
+class CategoryPages(models.Model):
+    """ Category pages bu model uzpostda tariflar sahifasi uchun tariflar categoriyasi kerak"""
+    title_ru = models.CharField(max_length=100)
+    title_uz = models.CharField(max_length=100)
+    pages = models.ManyToManyField(Pages, blank=True, related_name='category_pages')
+
+    class Meta:
+        ordering = ('id',)
+        db_table = 'category_page'
+        indexes = [
+            models.Index(fields=['id'])
+        ]
+
+
+class ControlCategoryPages(models.Model):
+    """ Control category pages bu model uzpostda category lar uchun2-category vazifasini bajaradi"""
+    title_ru = models.CharField(max_length=100)
+    title_uz = models.CharField(max_length=100)
+    page_categories = models.ManyToManyField(CategoryPages, blank=True, related_name='control_categories')
+
+    class Meta:
+        ordering = ('id', )
+        db_table = 'control_categories'
+        indexes = [
+            models.Index(fields=['id'])
+        ]
+
+
 class BranchServices(models.Model):
     """
         branch services model filial xizmat ko'rsatish jadvali

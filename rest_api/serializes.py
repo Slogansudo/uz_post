@@ -7,7 +7,7 @@ from db_models.models import (Banners, MenuElements, Menu, StatisticItems, Stati
                               Dividends, QuarterReports, UserInstructions, ExecutiveApparatus, ShablonUzPostTelNumber,
                               ShablonContactSpecialTitle, Contact, Advertisements, OrganicManagements, Partners,
                               RegionalBranches, Advertising, InformationAboutIssuer, Slides, SocialMedia, EssentialFacts,
-                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings)
+                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages)
 from django.db import transaction
 from django.contrib.auth.models import Group, Permission
 
@@ -175,6 +175,24 @@ class PostalServicesSerializer(serializers.ModelSerializer):
 class PagesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pages
+        fields = "__all__"
+        read_only_fields = ["id"]
+
+
+class CategoryPagesSerializer(serializers.ModelSerializer):
+    pages = PagesSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CategoryPages
+        fields = "__all__"
+        read_only_fields = ["id"]
+
+
+class ControlCategoryPagesSerializer(serializers.ModelSerializer):
+    page_categories = CategoryPagesSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ControlCategoryPages
         fields = "__all__"
         read_only_fields = ["id"]
 
