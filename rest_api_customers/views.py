@@ -41,6 +41,10 @@ from rest_api.serializes import (UsersRequestsSerializer, BannersSerializer, Men
                          AdvertisingSerializer, InformationAboutIssuerSerializer, SlidesSerializer, SocialMediaSerializer, EssentialFactsSerializer,
                          RatesSerializer, ServicesSerializer, CharterSocietySerializer, SecurityPapersSerializer, FAQSerializer,
                          SiteSettingsSerializer, CategoryPagesSerializer, ControlCategoryPagesSerializer)
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
+from zeep import Client
+from zeep.helpers import serialize_object
 
 
 class CustomUserThrottle(UserRateThrottle):
@@ -188,11 +192,50 @@ class MyProfileView(APIView):
          return Response(data='successful deleted', status=status.HTTP_204_NO_CONTENT)
 
 
+@method_decorator(cache_page(60*15), name='dispatch')
 class Barcode(APIView):
     permission_classes = [AllowAny, ]
     throttle_classes = [CustomUserUnauthorizedThrottle, ]
 
     def get(self, request, barcode):
+        if barcode[:2] == "RZ" or barcode[:2] == "CZ" or barcode[:1] == "E":
+            wsdl = 'http://10.100.0.69/IPSAPIService/TrackAndTraceService.svc?singleWsdl'
+
+            # SOAP servisi uchun ulanish
+            client = Client(wsdl=wsdl)
+
+            # Parametrlar tayyorlash
+            ids = barcode
+            # lang = 'RU'
+            token = '269a208f-7006-4dc6-b52f-6dfba6af113a'
+
+            # GetMailitems metodini chaqirish
+            response = client.service.GetMailitems(ids=ids, token=token)
+
+            # SOAP javobini dictionary'ga aylantirish
+            response_data = serialize_object(response)
+            if response_data == None:
+                first = {
+                    "code": "order_not_found",
+                    "message": "Order Not Found",
+                    "request_id": "69f059d0-1748-42cc-982c-7a322c4e81fa",
+                    "status": "error"
+                }
+                return Response(data=first, status=status.HTTP_404_NOT_FOUND)
+            response_data_2 = response_data
+            if response_data_2[0]["InfoFromEdi"] != None:
+                for i in range(len(
+                        response_data_2[0]["InfoFromEdi"]["TMailitemInfoFromEDI"][0]["Events"]["TMailitemEventEDI"])):
+                    response_data_2[0]["InfoFromEdi"]["TMailitemInfoFromEDI"][0]["Events"]["TMailitemEventEDI"][i][
+                        "ReceivedDispatch"] = None
+            if response_data_2[0]["OperationalMailitems"] != None:
+                for j in range(len(response_data_2[0]["OperationalMailitems"]["TMailitemInfoFromScanning"][0]["Events"][
+                                       "TMailitemEventScanning"])):
+                    response_data_2[0]["OperationalMailitems"]["TMailitemInfoFromScanning"][0]["Events"][
+                        "TMailitemEventScanning"][j]["ReceivedDispatch"] = None
+            return Response(data=response_data_2, status=status.HTTP_200_OK)
+
+
         data = requests.get(f"https://prodapi.pochta.uz/api/v1/public/order/{barcode}")
         data = data.json()
         if data['status'] != "success":
@@ -265,11 +308,46 @@ class Barcode(APIView):
         return Response(total_data_2, status=status.HTTP_200_OK)
 
 
+@method_decorator(cache_page(60*15), name='dispatch')
 class TrackIsAuth(APIView):
     permission_classes = [IsAuthenticated, IsCustomUsersGet]
     throttle_classes = [CustomUserThrottle, ]
 
     def get(self, request, barcode):
+        if barcode[:2] == "RZ" or barcode[:2] == "CZ" or barcode[:1] == "E":
+            wsdl = 'http://10.100.0.69/IPSAPIService/TrackAndTraceService.svc?singleWsdl'
+
+            # SOAP servisi uchun ulanish
+            client = Client(wsdl=wsdl)
+
+            # Parametrlar tayyorlash
+            ids = barcode
+            # lang = 'RU'
+            token = '269a208f-7006-4dc6-b52f-6dfba6af113a'
+
+            # GetMailitems metodini chaqirish
+            response = client.service.GetMailitems(ids=ids, token=token)
+
+            # SOAP javobini dictionary'ga aylantirish
+            response_data = serialize_object(response)
+            if response_data == None:
+                first = {
+	            "code": "order_not_found",
+	            "message": "Order Not Found",
+	            "request_id": "69f059d0-1748-42cc-982c-7a322c4e81fa",
+	            "status": "error"
+                }
+                return Response(data=first, status=status.HTTP_404_NOT_FOUND)
+            response_data_2 = response_data
+            if response_data_2[0]["InfoFromEdi"] != None:
+                for i in range(len(response_data_2[0]["InfoFromEdi"]["TMailitemInfoFromEDI"][0]["Events"]["TMailitemEventEDI"])):
+                    response_data_2[0]["InfoFromEdi"]["TMailitemInfoFromEDI"][0]["Events"]["TMailitemEventEDI"][i]["ReceivedDispatch"] = None
+            if response_data_2[0]["OperationalMailitems"] != None:
+                for j in range(len(response_data_2[0]["OperationalMailitems"]["TMailitemInfoFromScanning"][0]["Events"]["TMailitemEventScanning"])):
+                    response_data_2[0]["OperationalMailitems"]["TMailitemInfoFromScanning"][0]["Events"]["TMailitemEventScanning"][j]["ReceivedDispatch"] = None
+            return Response(data=response_data_2, status=status.HTTP_200_OK)
+
+
         data = requests.get(f"https://prodapi.pochta.uz/api/v1/public/order/{barcode}")
         data = data.json()
         if data['status'] != "success":
@@ -338,7 +416,58 @@ class TrackIsAuth(APIView):
                 total_data_2['gdeposilka'] = gdeposylka
             else:
                 total_data_2['gdeposilka'] = "please try again we are processing the data"
-        return Response(total_data_2, status=status.HTTP_200_OK)
+        return Response(data=total_data_2, status=status.HTTP_200_OK)
+
+
+@method_decorator(cache_page(60*15), name='dispatch')
+class TmuTrackAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsCustomUsersGet]
+    throttle_classes = [CustomUserThrottle, ]
+
+    def get(self, request, barcode):
+        if barcode[:2] == "RZ" or barcode[:2] == "CZ" or barcode[:1] == "E":
+            wsdl = 'http://10.100.0.69/IPSAPIService/TrackAndTraceService.svc?singleWsdl'
+
+            # SOAP servisi uchun ulanish
+            client = Client(wsdl=wsdl)
+
+            # Parametrlar tayyorlash
+            ids = barcode
+            # lang = 'RU'
+            token = '269a208f-7006-4dc6-b52f-6dfba6af113a'
+
+            # GetMailitems metodini chaqirish
+            response = client.service.GetMailitems(ids=ids, token=token)
+
+            # SOAP javobini dictionary'ga aylantirish
+            response_data = serialize_object(response)
+            if response_data == None:
+                first = {
+                    "code": "order_not_found",
+                    "message": "Order Not Found",
+                    "request_id": "69f059d0-1748-42cc-982c-7a322c4e81fa",
+                    "status": "error"
+                }
+                return Response(data=first, status=status.HTTP_404_NOT_FOUND)
+            response_data_2 = response_data
+            if response_data_2[0]["InfoFromEdi"] != None:
+                for i in range(len(
+                        response_data_2[0]["InfoFromEdi"]["TMailitemInfoFromEDI"][0]["Events"]["TMailitemEventEDI"])):
+                    response_data_2[0]["InfoFromEdi"]["TMailitemInfoFromEDI"][0]["Events"]["TMailitemEventEDI"][i][
+                        "ReceivedDispatch"] = None
+            if response_data_2[0]["OperationalMailitems"] != None:
+                for j in range(len(response_data_2[0]["OperationalMailitems"]["TMailitemInfoFromScanning"][0]["Events"][
+                                       "TMailitemEventScanning"])):
+                    response_data_2[0]["OperationalMailitems"]["TMailitemInfoFromScanning"][0]["Events"][
+                        "TMailitemEventScanning"][j]["ReceivedDispatch"] = None
+            return Response(data=response_data_2, status=status.HTTP_200_OK)
+        first = {
+            "code": "order_not_found",
+            "message": "Order Not Found",
+            "request_id": "69f059d0-1748-42cc-982c-7a322c4e81fa",
+            "status": "error"
+        }
+        return Response(data=first, status=status.HTTP_404_NOT_FOUND)
 
 
 class UsersRequestsDetailView(APIView):
@@ -924,7 +1053,7 @@ class CategoryPagesViewSet(ModelViewSet):
 class ControlCategoryPageViewSet(ModelViewSet):
     queryset = ControlCategoryPages.objects.all()
     serializer_class = ControlCategoryPagesSerializer
-    permission_classes = [AllowAny, IsCustomUsersGet]
+    permission_classes = [IsAuthenticated, IsCustomUsersGet]
     throttle_classes = [CustomUserThrottle, ]
 
     @action(detail=True, methods=['post'])

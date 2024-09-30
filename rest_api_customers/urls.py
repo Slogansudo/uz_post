@@ -20,7 +20,7 @@ from .views import (Barcode, TrackIsAuth, RegisterUserView, MyProfileView, Users
                     InformationAboutIssuerAPIViewSet,
                     SlidesAPIViewSet, SocialMediaAPIViewSet, EssentialFactsAPIViewSet, RatesAPIViewSet,
                     ServicesAPIViewSet, CharterSocietyAPIViewSet,
-                    SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet, CategoryPagesViewSet, ControlCategoryPageViewSet)
+                    SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet, CategoryPagesViewSet, ControlCategoryPageViewSet, TmuTrackAPIView)
 
 
 schema_view = get_schema_view(
@@ -98,5 +98,6 @@ urlpatterns = [
     path('profile/', MyProfileView.as_view(), name='profile'),
     path('track/<slug:barcode>/', Barcode.as_view(), name='barcode'),
     path('tracking/<slug:barcode>/', TrackIsAuth.as_view(), name='auth-tracking'),
-    path('userrequests/', UsersRequestsDetailView.as_view(), name='user_requests')
+    path('temutrack/<slug:barcode>/', TmuTrackAPIView.as_view(), name='temutrack'),
+    path('userrequests/', UsersRequestsDetailView.as_view(), name='user_requests'),
 ]

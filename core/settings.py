@@ -17,10 +17,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-+9cc1jqjrr8ep()6xs#&=9xt1h1t^hkafqyc64vx@+(h^3n%3+"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 APPEND_SLASH = False
 ALLOWED_HOSTS = ["10.100.0.24"]
-
+#10.100.0.24
 
 # Application definition
 
@@ -63,6 +63,20 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# settings.py
+
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django_redis.cache.RedisCache',
+#         'LOCATION': 'redis://192.168.1.100:6379/1',
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#         },
+#     }
+# }
+
+
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
@@ -114,6 +128,9 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.AllowAny',
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
     ),
     'DEFAULT_THROTTLE_CLASSES': [
         # 'rest_framework.throttling.UserRateThrottle',
