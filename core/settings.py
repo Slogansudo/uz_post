@@ -14,12 +14,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-+9cc1jqjrr8ep()6xs#&=9xt1h1t^hkafqyc64vx@+(h^3n%3+"
+SECRET_KEY = 'django-insecure-vg6cm-bk!@ufc)pu3efcl$^cmu_6bqrfb7(mypxwag1z(z-jr0'
+# "django-insecure-+9cc1jqjrr8ep()6xs#&=9xt1h1t^hkafqyc64vx@+(h^3n%3+"
+
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 APPEND_SLASH = False
-ALLOWED_HOSTS = ["10.100.0.24"]
+ALLOWED_HOSTS = ["209.97.184.213"]
 #10.100.0.24
 
 # Application definition
@@ -76,14 +79,24 @@ MIDDLEWARE = [
 #     }
 # }
 
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# CSRF_TRUSTED_ORIGINS = ['https://new.pochta.uz', 'http://new.pochta.uz']
+# SESSION_COOKIE_DOMAIN = 'new.pochta.uz'
+# CSRF_COOKIE_DOMAIN = 'new.pochta.uz'
+
+
 
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://localhost:3000",
     "http://127.0.0.1:8000",
-    "http://10.100.0.24",
-    "https://10.100.0.24",
+    "http://209.97.184.213",
+    "https://209.97.184.213",
 ]
 
 
@@ -123,6 +136,7 @@ AUTH_USER_MODEL = 'models.CustomUser'
 # }
 
 REST_FRAMEWORK = {
+
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
