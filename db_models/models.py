@@ -1147,6 +1147,22 @@ class Services(models.Model):
             models.Index(fields=['id'])
         ]
 
+##################################################################### new
+
+
+class CategoryServices(models.Model):
+    name_uz = models.CharField(max_length=200, null=True, blank=True)
+    name_ru = models.CharField(max_length=200, null=True, blank=True)
+    services_id = models.ManyToManyField(Services, related_name='category_services', blank=True)
+
+    class Meta:
+        ordering = ('id',)
+        db_table = 'category_services'
+        indexes = [
+            models.Index(fields=['id'])
+        ]
+###########################################################################
+
 
 class CharterSociety(models.Model):
     """

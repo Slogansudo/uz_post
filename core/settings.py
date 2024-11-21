@@ -20,9 +20,10 @@ SECRET_KEY = 'django-insecure-vg6cm-bk!@ufc)pu3efcl$^cmu_6bqrfb7(mypxwag1z(z-jr0
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 APPEND_SLASH = False
-ALLOWED_HOSTS = ["209.97.184.213"]
+ALLOWED_HOSTS = ["*"]
+#209.97.184.213
 #10.100.0.24
 
 # Application definition
@@ -58,6 +59,8 @@ MIDDLEWARE = [
     #
     'corsheaders.middleware.CorsMiddleware',
     #
+    #'core.middleware.static_token_required',
+    #
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -79,16 +82,17 @@ MIDDLEWARE = [
 #     }
 # }
 
+
+#os.getenv("STATIC_API_TOKEN")
+
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-# CSRF_TRUSTED_ORIGINS = ['https://new.pochta.uz', 'http://new.pochta.uz']
-# SESSION_COOKIE_DOMAIN = 'new.pochta.uz'
-# CSRF_COOKIE_DOMAIN = 'new.pochta.uz'
-
-
+CSRF_TRUSTED_ORIGINS = ['https://new.pochta.uz', 'http://new.pochta.uz']
+SESSION_COOKIE_DOMAIN = 'new.pochta.uz'
+CSRF_COOKIE_DOMAIN = 'new.pochta.uz'
 
 
 CORS_ALLOWED_ORIGINS = [
@@ -100,7 +104,9 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 
-CORS_ALLOW_ALL_ORIGINS = True
+#CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 
 ROOT_URLCONF = 'core.urls'
 
@@ -147,7 +153,7 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ),
     'DEFAULT_THROTTLE_CLASSES': [
-        # 'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
         'core.throttling.CustomRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {

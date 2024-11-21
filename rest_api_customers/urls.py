@@ -20,8 +20,10 @@ from .views import (Barcode, TrackIsAuth, RegisterUserView, MyProfileView, Users
                     InformationAboutIssuerAPIViewSet,
                     SlidesAPIViewSet, SocialMediaAPIViewSet, EssentialFactsAPIViewSet, RatesAPIViewSet,
                     ServicesAPIViewSet, CharterSocietyAPIViewSet,
-                    SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet, CategoryPagesViewSet, ControlCategoryPageViewSet, TmuTrackAPIView)
+                    SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet, CategoryPagesViewSet, ControlCategoryPageViewSet, TmuTrackAPIView,
+                    CalculatorShipoxView, OrderServicesView, Test)
 
+from .views import CustomTokenObtainPairView
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -91,8 +93,10 @@ router.register("site-settings", viewset=SiteSettingsAPIViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('docs-swagger/', schema_view.with_ui("swagger", cache_timeout=0), name='swagger'),
-    path('docs-redoc/', schema_view.with_ui("redoc", cache_timeout=0), name='redoc'),
+    path("test/<slug:barcode>/", Test.as_view(), name="test"),
+    path('authenticate/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    # path('docs-swagger/', schema_view.with_ui("swagger", cache_timeout=0), name='swagger'),
+    # path('docs-redoc/', schema_view.with_ui("redoc", cache_timeout=0), name='redoc'),
     path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('register/', RegisterUserView.as_view(), name='register'),
     path('profile/', MyProfileView.as_view(), name='profile'),
@@ -100,4 +104,6 @@ urlpatterns = [
     path('tracking/<slug:barcode>/', TrackIsAuth.as_view(), name='auth-tracking'),
     path('temutrack/<slug:barcode>/', TmuTrackAPIView.as_view(), name='temutrack'),
     path('userrequests/', UsersRequestsDetailView.as_view(), name='user_requests'),
+    path("calculator/order/", CalculatorShipoxView.as_view(), name='register-shipox'),
+    path("order/services/", OrderServicesView.as_view(), name='locations')
 ]

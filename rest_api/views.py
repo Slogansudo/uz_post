@@ -11,7 +11,7 @@ from .serializes import (CustomUserSerializer, UsersRequestsSerializer, BannersS
                          ContactSerializer, AdvertisementsSerializer, OrganicManagementsSerializer, PartnersSerializer, RegionalBranchesSerializer,
                          AdvertisingSerializer, InformationAboutIssuerSerializer, SlidesSerializer, SocialMediaSerializer, EssentialFactsSerializer,
                          RatesSerializer, ServicesSerializer, CharterSocietySerializer, SecurityPapersSerializer, FAQSerializer,
-                         SiteSettingsSerializer, GroupSerializer, PermissionsSerializer, CategoryPagesSerializer, ControlCategoryPagesSerializer)
+                         SiteSettingsSerializer, GroupSerializer, PermissionsSerializer, CategoryPagesSerializer, ControlCategoryPagesSerializer, CategoryServicesSerializer)
 
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -33,7 +33,7 @@ from db_models.models import (Banners, MenuElements, Menu, StatisticItems, Stati
                               Dividends, QuarterReports, UserInstructions, ExecutiveApparatus, ShablonUzPostTelNumber,
                               ShablonContactSpecialTitle, Contact, Advertisements, OrganicManagements, Partners,
                               RegionalBranches, Advertising, InformationAboutIssuer, Slides, SocialMedia, EssentialFacts,
-                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages)
+                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages, CategoryServices)
 from rest_framework.decorators import action
 import requests
 from rest_framework.throttling import UserRateThrottle
@@ -83,37 +83,36 @@ class UsersDetailAPIView(APIView):
             return Response(data=serializer.data, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST, data="not authorized")
 
+
     def put(self, request, id):
         user = request.user
         if user.is_staff:
             user_instance = get_object_or_404(CustomUser, id=id)
             data = request.data
             image = request.FILES.get('image')
-
-            # Rasmni o'chirish uchun flag
             remove_image = data.get('remove_image')
 
             if image and user_instance.image:
-                user_instance.image.delete()  # Eski rasmni o'chirish
+                user_instance.image.delete()
 
             if remove_image:
-                user_instance.image.delete()  # Rasmni o'chirish
+                user_instance.image.delete()
                 user_instance.image = None
 
-            # Agar yangi parol kiritilmasa, eski parolni saqlab qolish
-            if 'password' in data:
-                password = data['password']
+            password = data.get('password')
+            if password:
                 if len(password) < 6:
                     return Response('Password must be longer than 6 characters', status=status.HTTP_400_BAD_REQUEST)
-                user_instance.password = make_password(password)
+                user_instance.password = make_password(password)  # Parolni hashing qilish
 
             serializer = CustomUserSerializer(instance=user_instance, data=data, partial=True)
             if serializer.is_valid():
-                user = serializer.save()
-                user.save()
+                user_instance.save()# Parol o'zgartirilgan qiymat bilan saqlanadi
+                serializer.save()
                 return Response(data=serializer.data, status=status.HTTP_200_OK)
             return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
         return Response(status=status.HTTP_400_BAD_REQUEST, data="not found")
+
 
     def delete(self, request, id):
         user = request.user
@@ -1989,6 +1988,53 @@ class ServicesAPIViewSet(ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save()
+
+
+class CategoryServicesAPIViewSet(ModelViewSet):
+    queryset = CategoryServices.objects.all()
+    serializer_class = CategoryServicesSerializer
+    permission_classes = [IsAdminUser, IsAuthenticated]
+    throttle_classes = [CustomUserThrottle, ]
+
+    @action(detail=True, methods=['post'])
+    def services_id(self, request, *args, **kwargs):
+        category = self.get_object()
+        serializer = CategoryServicesSerializer(data=request.data)
+        if serializer.is_valid():
+            services = serializer.save()
+            category.services_id.add(services)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @services_id.mapping.put
+    def update_services(self, request, *args, **kwargs):
+        id = request.data.get('id')
+        if type(id) != int or id is None:
+            return Response(data="Try to enter the correct id", status=status.HTTP_400_BAD_REQUEST)
+        category = self.get_object()
+        services = category.services_id.filter(id=id).first()
+        if services is None:
+            return Response(data="tel number not found", status=status.HTTP_404_NOT_FOUND)
+        serializer = CategoryServicesSerializer(services, data=request.data)
+        if serializer.is_valid():
+            aka = serializer.save()
+            aka.save()
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+
+    @services_id.mapping.delete
+    def delete_services(self, request, *args, **kwargs):
+        category = self.get_object()
+        id = request.data.get('id')
+        if type(id) != int or id is None:
+            return Response(data="You must enter the id as an int type", status=status.HTTP_400_BAD_REQUEST)
+        data = category.services_id.filter(id=id)
+        if not data:
+            return Response(data="No such description_2", status=status.HTTP_404_NOT_FOUND)
+        category.services_id.remove(data.first())
+        services = Services.objects.get(id=id)
+        services.delete()
+        return Response(data="successful deleted", status=status.HTTP_204_NO_CONTENT)
 
 
 class CharterSocietyAPIViewSet(ModelViewSet):

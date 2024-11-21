@@ -46,6 +46,14 @@ from django.utils.decorators import method_decorator
 from zeep import Client
 from zeep.helpers import serialize_object
 
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializer import CustomTokenObtainPairSerializer
+from core.middleware import static_token_required
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
 
 class CustomUserThrottle(UserRateThrottle):
     rate = '30/minute'
@@ -67,6 +75,145 @@ class IsCustomUsersPost(BasePermission):
         if request.method in ('GET', 'POST', 'OPTIONS'):
             return True
         return False
+
+    def post(self, request):
+        values = {
+            "username": "+998505850551",
+            "password": "Uzpost@9933",
+            "remember_me": True
+          }
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+        # JSON formatida yuborish
+        response = requests.post('https://prodapi.pochta.uz/api/v1/customer/authenticate', json=values, headers=headers)
+
+        # Agar ma'lumotlar noto'g'ri bo'lsa, ma'lumotlar va statusni qaytarish
+        # Agar hamma narsa to'g'ri bo'lsa
+        data = response.json()
+        if response.status_code != 200:
+            return Response(data, status=response.status_code)
+        return Response(data=data, status=status.HTTP_201_CREATED)
+
+
+from pprint import pprint as p
+import time
+# Global token va muddati saqlanadigan o'zgaruvchilar
+
+
+cached_token = None
+token_expiry = 0
+
+
+def gettoken():
+    global cached_token, token_expiry
+    # Token amal qilish muddati tugaganini tekshirish
+    if cached_token and time.time() < token_expiry:
+        return cached_token
+
+    # Token olish uchun so'rov
+    values = {
+        "username": "+998505850551",
+        "password": "Uzpost@9933",
+        "remember_me": True
+    }
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
+    response = requests.post('https://prodapi.pochta.uz/api/v1/customer/authenticate', json=values, headers=headers)
+
+    data = response.json()
+    if response.status_code != 200:
+        return data["status"]
+
+    # Yangi tokenni saqlash
+    cached_token = data["data"]["id_token"]
+
+    # Tokenning amal qilish muddati (odatda JWT tokenida "exp" maydoni bo'ladi)
+    # Tokenning amal qilish vaqtini (24 soat yoki 86400 soniya) qo'shamiz
+    token_expiry = time.time() + 86400
+
+    return cached_token
+
+
+@method_decorator(cache_page(60*15), name='dispatch')
+class OrderServicesView(APIView):
+    def get(self, request):
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {gettoken()}'
+        }
+        data = {}
+        request_1 = requests.get('https://prodapi.pochta.uz/api/v1/service_types', headers=headers)
+        data_1 = request_1.json()
+        if data_1["status"] == "success":
+            data["service_types"] = data_1
+        request = requests.get('https://prodapi.pochta.uz/api/v2/jurisdiction/choose/list', headers=headers)
+        data_2 = request.json()
+        base = []
+        if data_2["status"] == "success":
+            for location in data_2["data"]:
+                if len(location["hierarchy"]) != 0:
+                    base.append(location)
+        data_2["data"] = base
+        data["locations"] = data_2
+        return Response(data=data, status=status.HTTP_200_OK)
+
+
+#@method_decorator(cache_page(60*15), name='dispatch')
+class CalculatorShipoxView(APIView):
+    def get(self, request):
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {gettoken()}'
+        }
+        data = {}
+        data_x = request.data
+        # {
+        #     "id": 368,
+        #     "name": "Amudaryo Tumani",
+        #     "code": "amudaryo_tumani",
+        #     "description": "amudaryo_tumani",
+        #     "country_code": "UZ",
+        #     "parent_id": 265,
+        #     "children": [],
+        #     "hierarchy": [
+        #         {
+        #             "id": 246,
+        #             "name": "O'zbekiston",
+        #             "code": null,
+        #             "description": null,
+        #             "country_code": null
+        #         },
+        #         {
+        #             "id": 265,
+        #             "name": "Qoraqalpog'iston Respublikasi",
+        #             "code": null,
+        #             "description": null,
+        #             "country_code": null
+        #         }
+        #     ],
+        #     "lat": 42.0847129821778,
+        #     "lng": 60.2374791685756
+        # },
+
+        request = requests.get('https://prodapi.pochta.uz/api/v2/jurisdiction/choose/list', headers=headers)
+        data_x = request.json()
+        #data["locations"] = data_x
+        # other country services
+
+        request_2 = requests.get(
+            f'https://prodapi.pochta.uz/api/v2/customer/packages/prices/starting_from?dimensions_weight=2&service_type=136&page=0&size=2 0&fromJurisdictionId=&toJurisdictionId=&from_latitude=25.137599&from_longitude=55.23740&to_latitude=25.076429&to_longitude=55.140504',
+            headers=headers)
+        data["prices"] = request_2.json()
+        if request_2.status_code != 200:
+            return Response({"error": "Failed to retrieve data"}, status=response.status_code)
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class RegisterUserView(APIView):
@@ -120,8 +267,17 @@ class RegisterUserView(APIView):
 
         )
         custom_user.save()
-
-        return Response('successful registration', status=status.HTTP_201_CREATED)
+        data = {
+            "phone_number": phone_number,
+            'first_name': first_name,
+            'last_name': last_name,
+            'region': region,
+            'district': district,
+            'password': "********",
+            "image": None,
+            "status": "successful"
+        }
+        return Response(data=data, status=status.HTTP_201_CREATED)
 
 
 class MyProfileView(APIView):
@@ -198,7 +354,7 @@ class Barcode(APIView):
     throttle_classes = [CustomUserUnauthorizedThrottle, ]
 
     def get(self, request, barcode):
-        if barcode[:2] == "RZ" or barcode[:2] == "CZ" or barcode[:1] == "E":
+        if (barcode[:2] == "RZ" or barcode[:2] == "CZ" or barcode[:1] == "E") and barcode[:3] != "EHM" and barcode[:3] != "EMI":
             wsdl = 'http://10.100.0.69/IPSAPIService/TrackAndTraceService.svc?singleWsdl'
 
             # SOAP servisi uchun ulanish
@@ -305,6 +461,218 @@ class Barcode(APIView):
                 total_data_2['gdeposilka'] = gdeposylka
             else:
                 total_data_2['gdeposilka'] = "please try again we are processing the data"
+        return Response(total_data_2, status=status.HTTP_200_OK)
+
+
+from requests.exceptions import ConnectTimeout, RequestException
+
+
+@method_decorator(cache_page(60*1), name='dispatch')
+class Test(APIView):
+    permission_classes = [AllowAny, ]
+    throttle_classes = [CustomUserUnauthorizedThrottle, ]
+
+    def get(self, request, barcode):
+        if (barcode[:2] == "RZ" or barcode[:2] == "CZ" or barcode[:1] == "E") and barcode[:3] != "EHM" and barcode[:3] != "EMI":
+            wsdl = 'http://10.100.0.69/IPSAPIService/TrackAndTraceService.svc?singleWsdl'
+
+            # SOAP servisi uchun ulanish
+            client = Client(wsdl=wsdl)
+
+            # Parametrlar tayyorlash
+            ids = barcode
+            # lang = 'RU'
+            token = '269a208f-7006-4dc6-b52f-6dfba6af113a'
+
+            # GetMailitems metodini chaqirish
+            response = client.service.GetMailitems(ids=ids, token=token)
+
+            # SOAP javobini dictionary'ga aylantirish
+            response_data = serialize_object(response)
+            if response_data == None:
+                first = {
+                    "code": "order_not_found",
+                    "message": "Order Not Found",
+                    "request_id": "69f059d0-1748-42cc-982c-7a322c4e81fa",
+                    "status": "error"
+                }
+                return Response(data=first, status=status.HTTP_404_NOT_FOUND)
+            response_data_2 = response_data
+            if response_data_2[0]["InfoFromEdi"] != None:
+                for i in range(len(
+                        response_data_2[0]["InfoFromEdi"]["TMailitemInfoFromEDI"][0]["Events"]["TMailitemEventEDI"])):
+                    response_data_2[0]["InfoFromEdi"]["TMailitemInfoFromEDI"][0]["Events"]["TMailitemEventEDI"][i][
+                        "ReceivedDispatch"] = None
+            if response_data_2[0]["OperationalMailitems"] != None:
+                for j in range(len(response_data_2[0]["OperationalMailitems"]["TMailitemInfoFromScanning"][0]["Events"][
+                                       "TMailitemEventScanning"])):
+                    response_data_2[0]["OperationalMailitems"]["TMailitemInfoFromScanning"][0]["Events"][
+                        "TMailitemEventScanning"][j]["ReceivedDispatch"] = None
+            return Response(data=response_data_2, status=status.HTTP_200_OK)
+
+        # header keladigan data
+        max_retries = 1  # Maksimal urinishlar soni
+        retry_delay = 1  # Qayta urinishdan oldin kutish (soniyada)
+        url_header = f"https://prodapi.pochta.uz/api/v1/public/order/{barcode}"
+        url_shipox = f"https://prodapi.pochta.uz/api/v1/public/order/{barcode}/history_items"
+
+        for attempt in range(max_retries):
+            try:
+                # APIga so'rov yuborish
+                data_header = requests.get(url_header, timeout=1)
+                data_shipox = requests.get(url_shipox, timeout=1)
+
+                data_header = data_header.json()
+                data_shipox = data_shipox.json()
+                # API'dan muvaffaqiyatli javob olinsa, ma'lumotni qaytarish
+                if data_header.get('status') == "success":
+                    total_data_2 = {'header': data_header}
+                    if barcode[:2] != 'SX' and data_header["data"]['locations'][0]['country']['code'] == 'UZ' and \
+                            data_header["data"]['locations'][1]['country']['code'] == 'UZ':
+
+                        total_data_2['shipox'] = data_shipox
+                        total_data_2['gdeposilka'] = None
+                        return Response(total_data_2, status=status.HTTP_200_OK)
+                    total_data_2 = {"header": data_header, "shipox": data_shipox}
+
+                    # gdeposilka ma'lumotlari shipox bilan bog'liqlari
+
+                    url1 = f"https://gdeposylka.ru/api/v4/tracker/detect/{barcode}"
+                    headers = {
+                        "X-Authorization-Token": "65bbbac85f796f8032e0874411f4d1f5af7185a99e184709bf0c1f38d95486fa2338733760a48704"
+                    }
+                    response1 = requests.get(url1, headers=headers)
+                    data = response1.json()
+
+                    if len(data["data"]) != 0:
+                        url2 = f"https://gdeposylka.ru{data['data'][0]['tracker_url']}"
+                        response2 = requests.get(url2, headers=headers)
+                        response_x = response2.json()
+                        if len(response_x["messages"]) == 0:
+                            gdeposylka = {
+                                "result": response_x['result'],
+                                'data': {
+                                    'id': response_x['data']['id'],
+                                    'tracking_number': response_x['data']['tracking_number'],
+                                    "tracking_number_secondary": response_x['data']['tracking_number_secondary'],
+                                    "tracking_number_current": response_x['data']['tracking_number_current'],
+                                    "courier": response_x['data']['courier'],
+                                    "is_active": response_x['data']['is_active'],
+                                    "is_delivered": response_x['data']['is_delivered'],
+                                    "last_check": response_x['data']['last_check'],
+                                    'checkpoints': [],
+                                    "extra": response_x['data']['extra']
+                                }
+                            }
+                            for points in response_x['data']['checkpoints']:
+                                if points['courier']['slug'] != 'ozbekiston-pochtasi':
+                                    gdeposylka['data']['checkpoints'].append(points)
+                            total_data_2['gdeposilka'] = gdeposylka
+                        else:
+                            time.sleep(15)
+                            response2 = requests.get(url2, headers=headers)
+                            response_x = response2.json()
+                            if len(response_x['messages']) == 0:
+                                gdeposylka = {
+                                    "result": response_x['result'],
+                                    'data': {
+                                        'id': response_x['data']['id'],
+                                        'tracking_number': response_x['data']['tracking_number'],
+                                        "tracking_number_secondary": response_x['data']['tracking_number_secondary'],
+                                        "tracking_number_current": response_x['data']['tracking_number_current'],
+                                        "courier": response_x['data']['courier'],
+                                        "is_active": response_x['data']['is_active'],
+                                        "is_delivered": response_x['data']['is_delivered'],
+                                        "last_check": response_x['data']['last_check'],
+                                        'checkpoints': [],
+                                        "extra": response_x['data']['extra']
+                                    }
+                                }
+                                for points in response_x['data']['checkpoints']:
+                                    if points['courier']['slug'] != 'ozbekiston-pochtasi':
+                                        gdeposylka['data']['checkpoints'].append(points)
+                                total_data_2['gdeposilka'] = gdeposylka
+                            else:
+                                total_data_2['gdeposilka'] = "please try again we are processing the data"
+                        return Response(total_data_2, status=status.HTTP_200_OK)
+                    total_data_2['gdeposilka'] = None
+                    return Response(total_data_2, status=status.HTTP_200_OK)
+                else:
+                    total_data_2 = {"header": None, "shipox": None}
+
+            except ConnectTimeout:
+                # Agar ulanish timeoutga uchrasa, qayta urinib ko'riladi
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)  # Kutish va yana urinib ko'rish
+                else:
+                    total_data_2 = {"header": "Server bilan ulanishda muammo yuz berdi. Iltimos, keyinroq qayta urinib ko'ring.",
+                                    "gdeposilka_header": None,
+                                    "shipox": "Server bilan bo'glanishda muammo yuz berdi"}
+
+
+        # shipoxga bo'g'liq bo'lmagan gdeposilka ma'lumotlari
+
+
+        url1 = f"https://gdeposylka.ru/api/v4/tracker/detect/{barcode}"
+        headers = {
+            "X-Authorization-Token": "65bbbac85f796f8032e0874411f4d1f5af7185a99e184709bf0c1f38d95486fa2338733760a48704"
+        }
+        response1 = requests.get(url1, headers=headers)
+        data = response1.json()
+
+        if len(data["data"]) != 0:
+            url2 = f"https://gdeposylka.ru{data['data'][0]['tracker_url']}"
+            response2 = requests.get(url2, headers=headers)
+            response_x = response2.json()
+            if len(response_x["messages"]) == 0:
+                # gdeposylka = {
+                #     "result": response_x['result'],
+                #     'data': {
+                #         'id': response_x['data']['id'],
+                #         'tracking_number': response_x['data']['tracking_number'],
+                #         "tracking_number_secondary": response_x['data']['tracking_number_secondary'],
+                #         "tracking_number_current": response_x['data']['tracking_number_current'],
+                #         "courier": response_x['data']['courier'],
+                #         "is_active": response_x['data']['is_active'],
+                #         "is_delivered": response_x['data']['is_delivered'],
+                #         "last_check": response_x['data']['last_check'],
+                #         'checkpoints': [],
+                #         "extra": response_x['data']['extra']
+                #     }
+                # }
+                # for points in response_x['data']['checkpoints']:
+                #     if points['courier']['slug'] != 'ozbekiston-pochtasi':
+                #         gdeposylka['data']['checkpoints'].append(points)
+                total_data_2['gdeposilka'] = response_x
+            else:
+                time.sleep(15)
+                response2 = requests.get(url2, headers=headers)
+                response_x = response2.json()
+                if len(response_x['messages']) == 0:
+                    # gdeposylka = {
+                    #     "result": response_x['result'],
+                    #     'data': {
+                    #         'id': response_x['data']['id'],
+                    #         'tracking_number': response_x['data']['tracking_number'],
+                    #         "tracking_number_secondary": response_x['data']['tracking_number_secondary'],
+                    #         "tracking_number_current": response_x['data']['tracking_number_current'],
+                    #         "courier": response_x['data']['courier'],
+                    #         "is_active": response_x['data']['is_active'],
+                    #         "is_delivered": response_x['data']['is_delivered'],
+                    #         "last_check": response_x['data']['last_check'],
+                    #         'checkpoints': [],
+                    #         "extra": response_x['data']['extra']
+                    #     }
+                    # }
+                    # for points in response_x['data']['checkpoints']:
+                    #     if points['courier']['slug'] != 'ozbekiston-pochtasi':
+                    #         gdeposylka['data']['checkpoints'].append(points)
+                    total_data_2['gdeposilka'] = response_x
+
+                else:
+                    total_data_2['gdeposilka'] = "please try again we are processing the data"
+            return Response(total_data_2, status=status.HTTP_200_OK)
+        total_data_2['gdeposilka'] = None
         return Response(total_data_2, status=status.HTTP_200_OK)
 
 

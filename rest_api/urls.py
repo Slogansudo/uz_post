@@ -15,7 +15,7 @@ from .views import (UsersAPIView, UsersDetailAPIView, UserRequestsView, UsersReq
                     ShablonContactSpecialTitleAPIViewSet, ContactAPIViewSet, AdvertisementsAPIViewSet, OrganicManagementsAPIViewSet,
                     PartnersAPIViewSet, RegionalBranchesAPIViewSet, AdvertisingAPIViewSet, InformationAboutIssuerAPIViewSet,
                     SlidesAPIViewSet, SocialMediaAPIViewSet, EssentialFactsAPIViewSet, RatesAPIViewSet, ServicesAPIViewSet, CharterSocietyAPIViewSet,
-                    SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet, CategoryPagesViewSet, ControlCategoryPageViewSet)
+                    SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet, CategoryPagesViewSet, ControlCategoryPageViewSet, CategoryServicesAPIViewSet)
 schema_view = get_schema_view(
     openapi.Info(
         title="UzPOST API",
@@ -79,6 +79,7 @@ router.register("charter-society", viewset=CharterSocietyAPIViewSet)
 router.register("security-papers", viewset=SecurityPapersAPIViewSet)
 router.register("faq", viewset=FAQAPIViewSet)
 router.register("site-settings", viewset=SiteSettingsAPIViewSet)
+router.register("category-services", viewset=CategoryServicesAPIViewSet)
 
 
 urlpatterns = [

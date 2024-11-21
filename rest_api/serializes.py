@@ -7,7 +7,7 @@ from db_models.models import (Banners, MenuElements, Menu, StatisticItems, Stati
                               Dividends, QuarterReports, UserInstructions, ExecutiveApparatus, ShablonUzPostTelNumber,
                               ShablonContactSpecialTitle, Contact, Advertisements, OrganicManagements, Partners,
                               RegionalBranches, Advertising, InformationAboutIssuer, Slides, SocialMedia, EssentialFacts,
-                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages)
+                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages, CategoryServices)
 from django.db import transaction
 from django.contrib.auth.models import Group, Permission
 
@@ -387,6 +387,15 @@ class RatesSerializer(serializers.ModelSerializer):
 class ServicesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Services
+        fields = "__all__"
+        read_only_fields = ["id"]
+
+
+class CategoryServicesSerializer(serializers.ModelSerializer):
+    services_id = ServicesSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CategoryServices
         fields = "__all__"
         read_only_fields = ["id"]
 
