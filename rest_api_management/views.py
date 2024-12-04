@@ -27,7 +27,7 @@ from db_models.models import (Banners, MenuElements, Menu, StatisticItems, Stati
                               Dividends, QuarterReports, UserInstructions, ExecutiveApparatus, ShablonUzPostTelNumber,
                               ShablonContactSpecialTitle, Contact, Advertisements, OrganicManagements, Partners,
                               RegionalBranches, Advertising, InformationAboutIssuer, Slides, SocialMedia, EssentialFacts,
-                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages)
+                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages, CategoryServices)
 
 from rest_api.serializes import (CustomUserSerializer, UsersRequestsSerializer, BannersSerializer, MenuElementsSerializer,
                         MenuSerializer, StatisticItemsSerializer, StatisticsSerializer, TegRegionsSerializer,
@@ -40,7 +40,7 @@ from rest_api.serializes import (CustomUserSerializer, UsersRequestsSerializer, 
                          ContactSerializer, AdvertisementsSerializer, OrganicManagementsSerializer, PartnersSerializer, RegionalBranchesSerializer,
                          AdvertisingSerializer, InformationAboutIssuerSerializer, SlidesSerializer, SocialMediaSerializer, EssentialFactsSerializer,
                          RatesSerializer, ServicesSerializer, CharterSocietySerializer, SecurityPapersSerializer, FAQSerializer,
-                         SiteSettingsSerializer, CategoryPagesSerializer, ControlCategoryPagesSerializer)
+                         SiteSettingsSerializer, CategoryPagesSerializer, ControlCategoryPagesSerializer, CategoryServicesSerializer)
 
 from .helps import (IsManagerProfileOrReadOnly, UserRequestsOrReadOnly, ManageAdvertisements, ManageAdvertising,
                     ManageAnnualReports, ManageBanners, ManageBranchServices, ManageBusinessPlansCompleted,
@@ -52,7 +52,7 @@ from .helps import (IsManagerProfileOrReadOnly, UserRequestsOrReadOnly, ManageAd
                     ManageStatisticItems, ManageTegBranches2, ManageTegExperience, ManageTegRegions, ManageTegVacancies,
                     ManageTegWorkingdays, ManageThemaQuestions, ManageUserInstructions, ManageVacanciesImages,
                     ManageMenu, ManagePartners, ManageContact, ManageStatistics, ManageEvents, ManageOrganicmanagements,
-                    ManageBranches, ManageUzPostNews, ManageVacancies, ManageCategoryPages, ManageControlCategoryPages)
+                    ManageBranches, ManageUzPostNews, ManageVacancies, ManageCategoryPages, ManageControlCategoryPages, ManageCategoryServices)
 
 
 class CustomUserThrottle(UserRateThrottle):
@@ -2033,6 +2033,53 @@ class ServicesAPIViewSet(ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save()
+
+
+class CategoryServicesAPIViewSet(ModelViewSet):
+    queryset = CategoryServices.objects.all()
+    serializer_class = CategoryServicesSerializer
+    permission_classes = [IsAdminUser, ManageCategoryServices]
+    throttle_classes = [CustomUserThrottle, ]
+
+    @action(detail=True, methods=['post'])
+    def services_id(self, request, *args, **kwargs):
+        category = self.get_object()
+        serializer = CategoryServicesSerializer(data=request.data)
+        if serializer.is_valid():
+            services = serializer.save()
+            category.services_id.add(services)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @services_id.mapping.put
+    def update_services(self, request, *args, **kwargs):
+        id = request.data.get('id')
+        if type(id) != int or id is None:
+            return Response(data="Try to enter the correct id", status=status.HTTP_400_BAD_REQUEST)
+        category = self.get_object()
+        services = category.services_id.filter(id=id).first()
+        if services is None:
+            return Response(data="tel number not found", status=status.HTTP_404_NOT_FOUND)
+        serializer = CategoryServicesSerializer(services, data=request.data)
+        if serializer.is_valid():
+            aka = serializer.save()
+            aka.save()
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+
+    @services_id.mapping.delete
+    def delete_services(self, request, *args, **kwargs):
+        category = self.get_object()
+        id = request.data.get('id')
+        if type(id) != int or id is None:
+            return Response(data="You must enter the id as an int type", status=status.HTTP_400_BAD_REQUEST)
+        data = category.services_id.filter(id=id)
+        if not data:
+            return Response(data="No such description_2", status=status.HTTP_404_NOT_FOUND)
+        category.services_id.remove(data.first())
+        services = Services.objects.get(id=id)
+        services.delete()
+        return Response(data="successful deleted", status=status.HTTP_204_NO_CONTENT)
 
 
 class CharterSocietyAPIViewSet(ModelViewSet):

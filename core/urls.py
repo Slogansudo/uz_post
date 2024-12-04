@@ -19,6 +19,8 @@ urlpatterns = [
     path('api/v1/admin/', include('rest_api.urls')),
     path('api/v1/public/', include('rest_api_customers.urls')),
     path('api/v1/manage/', include('rest_api_management.urls')),
+    path('api/v1/calculator/', include('calculator.urls')),
+
     #path('api/v1/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     #path('api/v1/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('', include('models.urls')),

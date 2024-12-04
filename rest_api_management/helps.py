@@ -65,6 +65,7 @@ from models.models import CustomUser
 #  58 | db_models       | branches
 #  59 | db_models       | uzpostnews
 #  60 | db_models       | vacancies
+#  61 | db_models       | categoryservices
 
 
 class IsManagerProfileOrReadOnly(BasePermission):
@@ -990,6 +991,39 @@ class ManageServices(BasePermission):
             if request.method in ('PUT', 'OPTIONS') and "change" in data.get("services", []):
                 return True
             if request.method in ('DELETE', 'OPTIONS') and "delete" in data.get("services", []):
+                return True
+        return False
+
+
+class ManageCategoryServices(BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        try:
+            exist_user = CustomUser.objects.get(id=user.id)
+        except CustomUser.DoesNotExist:
+            return False
+
+        # Foydalanuvchi hech qanday guruhga tegishli bo'lmasa, ruxsat berilmaydi
+        if not exist_user.groups.exists():
+            return False
+
+        # Ruxsatlar va tegishli content type modelini olish
+        permissions = [perm for group in exist_user.groups.all() for perm in group.permissions.all()]
+        data = {}
+        for perm in permissions:
+            data[perm.content_type.model] = []
+            for per in permissions:
+                if per.codename.split("_")[1] == perm.content_type.model:
+                    data[perm.content_type.model].append(per.codename.split("_")[0])
+
+        if 'services' in data.keys():
+            if request.method in ('GET', 'OPTIONS') and "view" in data.get("categoryservices", []):
+                return True
+            if request.method in ('POST', 'OPTIONS') and "add" in data.get("categoryservices", []):
+                return True
+            if request.method in ('PUT', 'OPTIONS') and "change" in data.get("categoryservices", []):
+                return True
+            if request.method in ('DELETE', 'OPTIONS') and "delete" in data.get("categoryservices", []):
                 return True
         return False
 

@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     # new framework
     'corsheaders',
     # framework
+    'django_filters',
     'django_extensions',
     'import_export',
     'rest_framework',
@@ -50,6 +51,7 @@ INSTALLED_APPS = [
     'db_models',
     'rest_api_customers',
     'rest_api_management',
+    'calculator',
 ]
 
 
@@ -59,7 +61,7 @@ MIDDLEWARE = [
     #
     'corsheaders.middleware.CorsMiddleware',
     #
-    #'core.middleware.static_token_required',
+    # 'core.middleware.static_token_required',
     #
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -85,14 +87,14 @@ MIDDLEWARE = [
 
 #os.getenv("STATIC_API_TOKEN")
 
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_HTTPONLY = True
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-CSRF_TRUSTED_ORIGINS = ['https://new.pochta.uz', 'http://new.pochta.uz']
-SESSION_COOKIE_DOMAIN = 'new.pochta.uz'
-CSRF_COOKIE_DOMAIN = 'new.pochta.uz'
+#CSRF_COOKIE_SECURE = True
+##SESSION_COOKIE_SECURE = True
+#CSRF_COOKIE_HTTPONLY = True
+##USE_X_FORWARDED_HOST = True
+#SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+#CSRF_TRUSTED_ORIGINS = ['https://new.pochta.uz', 'http://new.pochta.uz']
+#SESSION_COOKIE_DOMAIN = 'new.pochta.uz'
+#CSRF_COOKIE_DOMAIN = 'new.pochta.uz'
 
 
 CORS_ALLOWED_ORIGINS = [

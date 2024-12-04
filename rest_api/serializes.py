@@ -7,7 +7,7 @@ from db_models.models import (Banners, MenuElements, Menu, StatisticItems, Stati
                               Dividends, QuarterReports, UserInstructions, ExecutiveApparatus, ShablonUzPostTelNumber,
                               ShablonContactSpecialTitle, Contact, Advertisements, OrganicManagements, Partners,
                               RegionalBranches, Advertising, InformationAboutIssuer, Slides, SocialMedia, EssentialFacts,
-                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages, CategoryServices)
+                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages, CategoryServices, CategoryFaq)
 from django.db import transaction
 from django.contrib.auth.models import Group, Permission
 
@@ -419,6 +419,15 @@ class FAQSerializer(serializers.ModelSerializer):
         model = FAQ
         fields = "__all__"
         read_only_fields = ["id"]
+
+
+class CategoryFAQSerializer(serializers.ModelSerializer):
+    faq_id = FAQSerializer(many=True, read_only=True)
+    class Meta:
+        model = CategoryFaq
+        fields = "__all__"
+        read_only_fields = ["id"]
+
 
 
 class SiteSettingsSerializer(serializers.ModelSerializer):

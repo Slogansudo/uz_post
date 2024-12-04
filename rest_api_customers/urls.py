@@ -21,7 +21,7 @@ from .views import (Barcode, TrackIsAuth, RegisterUserView, MyProfileView, Users
                     SlidesAPIViewSet, SocialMediaAPIViewSet, EssentialFactsAPIViewSet, RatesAPIViewSet,
                     ServicesAPIViewSet, CharterSocietyAPIViewSet,
                     SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet, CategoryPagesViewSet, ControlCategoryPageViewSet, TmuTrackAPIView,
-                    CalculatorShipoxView, OrderServicesView, Test)
+                    CalculatorShipoxView, OrderServicesView, Test, CategoryServicesAPIViewSet, MarksAsosiyAPIViewSet, CategoryFAQAPIViewSet)
 
 from .views import CustomTokenObtainPairView
 
@@ -89,6 +89,9 @@ router.register("charter-society", viewset=CharterSocietyAPIViewSet)
 router.register("security-papers", viewset=SecurityPapersAPIViewSet)
 router.register("faq", viewset=FAQAPIViewSet)
 router.register("site-settings", viewset=SiteSettingsAPIViewSet)
+router.register("category-services", viewset=CategoryServicesAPIViewSet)
+router.register("marks-page", viewset=MarksAsosiyAPIViewSet, basename="marks-page")
+router.register("category-faq", viewset=CategoryFAQAPIViewSet, basename="category-faq")
 
 
 urlpatterns = [

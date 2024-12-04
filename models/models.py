@@ -3,6 +3,7 @@ from django.db import models
 import uuid
 
 
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, phone_number, first_name, last_name, password=None, **extra_fields):
         if not phone_number:

@@ -284,11 +284,14 @@ class Marks(models.Model):
     meta_words_uz = models.CharField(max_length=100, null=True, blank=True)
     link_ru = models.CharField(max_length=100, null=True, blank=True)
     link_uz = models.CharField(max_length=100, null=True, blank=True)
-    save_image = models.ImageField(upload_to='images/', null=True, blank=True)
+    save_image_uz = models.ImageField(upload_to='images/', null=True, blank=True)
+    save_image_ru = models.ImageField(upload_to='images/', null=True, blank=True)
     shablon = models.CharField(max_length=50)
     marks_count_ru = models.CharField(max_length=100, null=True, blank=True)
     marks_count_uz = models.CharField(max_length=100, null=True, blank=True)
-    years = models.CharField(max_length=100, null=True, blank=True)
+    years = models.BigIntegerField(null=True, blank=True)
+    price_uz = models.CharField(max_length=100, null=True, blank=True)
+    price_ru = models.CharField(max_length=100, null=True, blank=True)
     status = models.BooleanField(default=False)
     date = models.DateTimeField(auto_created=True)
 
@@ -1243,6 +1246,19 @@ class FAQ(models.Model):
     class Meta:
         ordering = ('id',)
         db_table = 'faq'
+        indexes = [
+            models.Index(fields=['id'])
+        ]
+
+
+class CategoryFaq(models.Model):
+    name_uz = models.CharField(max_length=200, null=True, blank=True)
+    name_ru = models.CharField(max_length=200, null=True, blank=True)
+    faq_id = models.ManyToManyField(FAQ, blank=True)
+
+    class Meta:
+        ordering = ('id',)
+        db_table = 'category-faq'
         indexes = [
             models.Index(fields=['id'])
         ]

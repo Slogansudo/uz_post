@@ -27,7 +27,8 @@ from db_models.models import (Banners, MenuElements, Menu, StatisticItems, Stati
                               Dividends, QuarterReports, UserInstructions, ExecutiveApparatus, ShablonUzPostTelNumber,
                               ShablonContactSpecialTitle, Contact, Advertisements, OrganicManagements, Partners,
                               RegionalBranches, Advertising, InformationAboutIssuer, Slides, SocialMedia, EssentialFacts,
-                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages)
+                              Rates, Services, CharterSociety, SecurityPapers, FAQ, SiteSettings, CategoryPages, ControlCategoryPages, CategoryServices,
+                              CategoryFaq)
 
 from rest_api.serializes import (UsersRequestsSerializer, BannersSerializer, MenuElementsSerializer,
                         MenuSerializer, StatisticItemsSerializer, StatisticsSerializer, TegRegionsSerializer,
@@ -40,7 +41,7 @@ from rest_api.serializes import (UsersRequestsSerializer, BannersSerializer, Men
                          ContactSerializer, AdvertisementsSerializer, OrganicManagementsSerializer, PartnersSerializer, RegionalBranchesSerializer,
                          AdvertisingSerializer, InformationAboutIssuerSerializer, SlidesSerializer, SocialMediaSerializer, EssentialFactsSerializer,
                          RatesSerializer, ServicesSerializer, CharterSocietySerializer, SecurityPapersSerializer, FAQSerializer,
-                         SiteSettingsSerializer, CategoryPagesSerializer, ControlCategoryPagesSerializer)
+                         SiteSettingsSerializer, CategoryPagesSerializer, ControlCategoryPagesSerializer, CategoryServicesSerializer, CategoryFAQSerializer)
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from zeep import Client
@@ -49,6 +50,24 @@ from zeep.helpers import serialize_object
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializer import CustomTokenObtainPairSerializer
 from core.middleware import static_token_required
+from rest_framework.pagination import PageNumberPagination
+from django_filters import rest_framework as filters
+from django_filters.rest_framework import DjangoFilterBackend
+
+
+class CustomPagination(PageNumberPagination):
+    page_size = 15  # Har bir sahifada 10 ta obyekt chiqadi
+    page_size_query_param = 'page_size'  # Foydalanuvchi URL'da 'page_size' ni o'zgartira oladi
+    max_page_size = 20  # Foydalanuvchi sahifa hajmini 100 dan oshira olmaydi
+
+    def get_paginated_response(self, data):
+        total_pages = (self.page.paginator.count + self.page_size - 1) // self.page_size
+        return Response({
+            'total_pages': total_pages,  # Sahifalar soni
+            "next": self.get_next_link(),
+            "previous": self.get_previous_link(),
+            'results': data
+        })
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -1163,9 +1182,12 @@ class MarksAPIViewSet(ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.save_image:
+        if instance.save_image_uz:
             if os.path.isfile(instance.save_image.path):
-                os.remove(instance.save_image.path)
+                os.remove(instance.save_image_uz.path)
+        if instance.save_image_ru and os.path.isfile(instance.save_image_ru.path):
+            os.remove(instance.save_image_ru.path)
+
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1175,11 +1197,67 @@ class MarksAPIViewSet(ModelViewSet):
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         # Oldingi rasm faylini o'chirish
-        if 'save_image' in request.data and not request.data['save_image']:
-            if instance.save_image:
-                if os.path.isfile(instance.save_image.path):
-                    os.remove(instance.save_image.path)
-                instance.save_image = None
+        if 'save_image_uz' in request.data and not request.data['save_image_uz']:
+            if instance.save_image_uz:
+                if os.path.isfile(instance.save_image_uz.path):
+                    os.remove(instance.save_image_uz.path)
+                instance.save_image_uz = None
+        if 'save_image_ru' in request.data and not request.data['save_image_ru']:
+            if instance.save_image_ru and os.path.isfile(instance.save_image_ru.path):
+                os.remove(instance.save_image_ru.path)
+
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+
+class MarksFilter(filters.FilterSet):
+    years = filters.RangeFilter(field_name='years')
+    class Meta:
+        model = Marks
+        fields = ["years"]
+
+
+class MarksAsosiyAPIViewSet(ModelViewSet):
+    queryset = Marks.objects.all()
+    serializer_class = MarksSerializer
+    permission_classes = [AllowAny, IsCustomUsersGet]
+    throttle_classes = [CustomUserThrottle, ]
+    pagination_class = CustomPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = MarksFilter
+
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.save_image_uz:
+            if os.path.isfile(instance.save_image.path):
+                os.remove(instance.save_image_uz.path)
+        if instance.save_image_ru and os.path.isfile(instance.save_image_ru.path):
+            os.remove(instance.save_image_ru.path)
+
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # Oldingi rasm faylini o'chirish
+        if 'save_image_uz' in request.data and not request.data['save_image_uz']:
+            if instance.save_image_uz:
+                if os.path.isfile(instance.save_image_uz.path):
+                    os.remove(instance.save_image_uz.path)
+                instance.save_image_uz = None
+        if 'save_image_ru' in request.data and not request.data['save_image_ru']:
+            if instance.save_image_ru and os.path.isfile(instance.save_image_ru.path):
+                os.remove(instance.save_image_ru.path)
 
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -2658,6 +2736,54 @@ class ServicesAPIViewSet(ModelViewSet):
         serializer.save()
 
 
+class CategoryServicesAPIViewSet(ModelViewSet):
+    queryset = CategoryServices.objects.all()
+    serializer_class = CategoryServicesSerializer
+    permission_classes = [AllowAny, IsCustomUsersGet]
+    throttle_classes = [CustomUserThrottle, ]
+
+    @action(detail=True, methods=['post'])
+    def services_id(self, request, *args, **kwargs):
+        category = self.get_object()
+        serializer = CategoryServicesSerializer(data=request.data)
+        if serializer.is_valid():
+            services = serializer.save()
+            category.services_id.add(services)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @services_id.mapping.put
+    def update_services(self, request, *args, **kwargs):
+        id = request.data.get('id')
+        if type(id) != int or id is None:
+            return Response(data="Try to enter the correct id", status=status.HTTP_400_BAD_REQUEST)
+        category = self.get_object()
+        services = category.services_id.filter(id=id).first()
+        if services is None:
+            return Response(data="tel number not found", status=status.HTTP_404_NOT_FOUND)
+        serializer = CategoryServicesSerializer(services, data=request.data)
+        if serializer.is_valid():
+            aka = serializer.save()
+            aka.save()
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+
+
+    @services_id.mapping.delete
+    def delete_services(self, request, *args, **kwargs):
+        category = self.get_object()
+        id = request.data.get('id')
+        if type(id) != int or id is None:
+            return Response(data="You must enter the id as an int type", status=status.HTTP_400_BAD_REQUEST)
+        data = category.services_id.filter(id=id)
+        if not data:
+            return Response(data="No such description_2", status=status.HTTP_404_NOT_FOUND)
+        category.services_id.remove(data.first())
+        services = Services.objects.get(id=id)
+        services.delete()
+        return Response(data="successful deleted", status=status.HTTP_204_NO_CONTENT)
+
+
 class CharterSocietyAPIViewSet(ModelViewSet):
     queryset = CharterSociety.objects.all()
     serializer_class = CharterSocietySerializer
@@ -2764,6 +2890,13 @@ class FAQAPIViewSet(ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save()
+
+
+class CategoryFAQAPIViewSet(ModelViewSet):
+    queryset = CategoryFaq.objects.all()
+    serializer_class = CategoryFAQSerializer
+    permission_classes = [AllowAny, IsCustomUsersGet]
+    throttle_classes = [CustomUserThrottle, ]
 
 
 class SiteSettingsAPIViewSet(ModelViewSet):
