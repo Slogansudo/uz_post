@@ -28,13 +28,18 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from .import_data import import_data
+from .ImportPochtamat import ImportPostalOffice
 from .models import Warehouse
 from .serializers import WarehouseSerializer
 
 
+class CustomUserThrottle(UserRateThrottle):
+    rate = '30/minute'
+
+
 class ResultExelView(APIView):
     def get(self, request):
-        data = import_data()
+        data = ImportPostalOffice()
         return Response(data=data, status=status.HTTP_200_OK)
 
 
@@ -107,9 +112,9 @@ def gettoken():
     return cached_token
 
 
-
 class OrderServicesView(APIView):
     permission_classes = [IsCustomUsersPost, ]
+    throttle_classes = [CustomUserThrottle, ]
     def get(self, request):
         headers = {
             'Content-Type': 'application/json',
@@ -126,6 +131,7 @@ class OrderServicesView(APIView):
 
 class VIloyatuzbView(APIView):
     permission_classes = [IsCustomUsersPost, ]
+    throttle_classes = [CustomUserThrottle, ]
     def get(self, request):
         data = {
             "Buxoro": "259",
@@ -148,6 +154,7 @@ class VIloyatuzbView(APIView):
 
 class VIloyatkrlView(APIView):
     permission_classes = [IsCustomUsersPost]
+    throttle_classes = [CustomUserThrottle, ]
     def get(self, request):
         data_k = {
             "Бухоро": "259",
@@ -180,15 +187,23 @@ def to_cyrillic(text):
 
 class LocationsKrelUZbView(APIView):
     permission_classes = [IsCustomUsersPost, ]
+    throttle_classes = [CustomUserThrottle, ]
+
     def get(self, request):
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Authorization': f'Bearer {gettoken()}'
         }
-        parent_id = request.data.get('parent_id')
-        if parent_id is None or type(parent_id) != int:
-            return Response(data="Invalid parent_id", status=status.HTTP_400_BAD_REQUEST)
+        parent_id = request.query_params.get('ParentId')
+        if parent_id is None:
+            return Response(data="Invalid ParentId", status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            parent_id = int(parent_id)
+        except ValueError:
+            return Response(data="Invalid ParentId: Must be an integer", status=status.HTTP_400_BAD_REQUEST)
+
         data = {}
         request = requests.get('https://prodapi.pochta.uz/api/v2/jurisdiction/choose/list', headers=headers)
         data_2 = request.json()
@@ -205,22 +220,30 @@ class LocationsKrelUZbView(APIView):
 
 class LocationsUZbUZbView(APIView):
     permission_classes = [IsCustomUsersPost, ]
+    throttle_classes = [CustomUserThrottle, ]
+
     def get(self, request):
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Authorization': f'Bearer {gettoken()}'
         }
-        parent_id = request.data.get('parent_id')
-        if parent_id is None or type(parent_id) != int:
-            return Response(data="Invalid parent_id", status=status.HTTP_400_BAD_REQUEST)
+        parent_id = request.query_params.get('ParentId')
+        if parent_id is None:
+            return Response(data="Invalid ParentId", status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            parent_id = int(parent_id)
+        except ValueError:
+            return Response(data="Invalid ParentId: Must be an integer", status=status.HTTP_400_BAD_REQUEST)
+
         data = {}
         request = requests.get('https://prodapi.pochta.uz/api/v2/jurisdiction/choose/list', headers=headers)
         data_2 = request.json()
         base = []
         if data_2["status"] == "success":
             for location in data_2["data"]:
-                if location["parent_id"] == parent_id:
+                if location["parent_id"] == int(parent_id):
                     base.append(location)
         data_2["data"] = base
         data["locations"] = data_2
@@ -229,6 +252,8 @@ class LocationsUZbUZbView(APIView):
 
 class LocationsAllView(APIView):
     permission_classes = [IsCustomUsersPost]
+    throttle_classes = [CustomUserThrottle, ]
+
     def get(self, request):
         headers = {
             'Content-Type': 'application/json',
@@ -249,6 +274,7 @@ class LocationsAllView(APIView):
 
 class LocationsKrelAllView(APIView):
     permission_classes = [IsCustomUsersPost]
+    throttle_classes = [CustomUserThrottle, ]
     def get(self, request):
         headers = {
             'Content-Type': 'application/json',
@@ -270,6 +296,8 @@ class LocationsKrelAllView(APIView):
 
 class CalculatorShipoxView(APIView):
     permission_classes = [IsCustomUsersPost, ]
+    throttle_classes = [CustomUserThrottle, ]
+
     def get(self, request):
         headers = {
             'Content-Type': 'application/json',
@@ -277,21 +305,37 @@ class CalculatorShipoxView(APIView):
             'Authorization': f'Bearer {gettoken()}'
         }
         data = {}
-        weight = request.data.get("weight")
-        if weight is None or type(weight) != float:
-            return Response(data="vaznni raqam ko'rinishida kiritishga harakat qiling", status=status.HTTP_400_BAD_REQUEST)
+        weight = request.query_params.get("Weight")
+        if weight is None:
+            return Response(data="invalid Weight", status=status.HTTP_400_BAD_REQUEST)
+        try:
+            weight = float(weight)
+        except ValueError:
+            return Response(data="Invalid weight: Must be an integer", status=status.HTTP_400_BAD_REQUEST)
+        service_type_id = request.query_params.get("ServiceTypeId")
+        if service_type_id is None:
+            return Response(data="ServiceTypeId should be int", status=status.HTTP_400_BAD_REQUEST)
+        try:
+            service_type_id = int(service_type_id)
+        except ValueError:
+            return Response(data="Invalid ServiceTypeId: Must be an integer", status=status.HTTP_400_BAD_REQUEST)
 
-        service_type_id = request.data.get("service_type_id")
-        if service_type_id is None or type(service_type_id) != int:
-            return Response(data="service_type_id int turida bo'lishi kerak", status=status.HTTP_400_BAD_REQUEST)
+        fromjurisdiction_id = request.query_params.get("FromJrisdictionId")
+        if fromjurisdiction_id is None:
+            return Response(data="FromJrisdictionId should be int", status=status.HTTP_400_BAD_REQUEST)
+        try:
+            fromjurisdiction_id = int(fromjurisdiction_id)
+        except ValueError:
+            return Response(data="Invalid FromJrisdictionId: Must be an integer", status=status.HTTP_400_BAD_REQUEST)
 
-        fromjurisdiction_id = request.data.get("fromjurisdiction_id")
-        if fromjurisdiction_id is None or type(fromjurisdiction_id) != int:
-            return Response(data="fromjurisdiction_id int turida bo'lishi kerak", status=status.HTTP_400_BAD_REQUEST)
+        tojurisdiction_id = request.query_params.get("ToJrisdictionId")
 
-        tojurisdiction_id = request.data.get("tojurisdiction_id")
-        if tojurisdiction_id is None or type(tojurisdiction_id) != int:
-            return Response(data="tojurisdiction_id turida bo'lishi kerak")
+        if tojurisdiction_id is None:
+            return Response(data="ToJrisdictionId should be int")
+        try:
+            tojurisdiction_id = int(tojurisdiction_id)
+        except ValueError:
+            return Response(data="Invalid ToJrisdictionId: Must be an integer", status=status.HTTP_400_BAD_REQUEST)
 
         request = requests.get('https://prodapi.pochta.uz/api/v2/jurisdiction/choose/list', headers=headers)
         data_2 = request.json()
@@ -323,29 +367,54 @@ class CalculatorShipoxView(APIView):
 #@method_decorator(cache_page(60*1), name='dispatch')
 class CalculatorShipoxIndexView(APIView):
     permission_classes = [IsCustomUsersPost, ]
+    throttle_classes = [CustomUserThrottle, ]
+
     def get(self, request):
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Authorization': f'Bearer {gettoken()}'
         }
+
         data = {}
-        weight = request.data.get("weight")
-        if weight is None or type(weight) != float:
-            return Response(data="vaznni raqam ko'rinishida kiritishga harakat qiling", status=status.HTTP_400_BAD_REQUEST)
+        weight = request.query_params.get("weight")
+        if weight is None:
+            return Response(data="Invalid weight: Missing parameter", status=status.HTTP_400_BAD_REQUEST)
+        try:
+            weight = float(weight)
+        except ValueError:
+            return Response(data="Invalid weight: Must be a float", status=status.HTTP_400_BAD_REQUEST)
 
-        service_type_id = request.data.get("service_type_id")
-        if service_type_id is None or type(service_type_id) != int:
-            return Response(data="service_type_id int turida bo'lishi kerak", status=status.HTTP_400_BAD_REQUEST)
+        # service_type_id ni tekshirish
+        service_type_id = request.query_params.get("service_type_id")
+        if service_type_id is None:
+            return Response(data="Invalid service_type_id: Missing parameter", status=status.HTTP_400_BAD_REQUEST)
+        try:
+            service_type_id = int(service_type_id)
+        except ValueError:
+            return Response(data="Invalid service_type_id: Must be an integer", status=status.HTTP_400_BAD_REQUEST)
 
-        fromjurisdiction_id = request.data.get("fromjurisdiction_id")
-        if fromjurisdiction_id is None or type(fromjurisdiction_id) != int:
-            return Response(data="fromjurisdiction_id int turida bo'lishi kerak", status=status.HTTP_400_BAD_REQUEST)
+        # fromjurisdiction_id ni tekshirish
+        fromjurisdiction_id = request.query_params.get("fromjurisdiction_id")
+        if fromjurisdiction_id is None:
+            return Response(data="Invalid fromjurisdiction_id: Missing parameter",
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            fromjurisdiction_id = int(fromjurisdiction_id)
+        except ValueError:
+            return Response(data="Invalid fromjurisdiction_id: Must be an integer",
+                            status=status.HTTP_400_BAD_REQUEST)
 
-        tojurisdiction_id = request.data.get("index")
-        if tojurisdiction_id is None:
-            return Response(data="index ni kiritish kerak")
-        warehouse = Warehouse.objects.filter(index=str(tojurisdiction_id)).first()
+        # index ni tekshirish
+        index = request.query_params.get("index")
+        if index is None:
+            return Response(data="Invalid index: Missing parameter", status=status.HTTP_400_BAD_REQUEST)
+
+        # Omborxona ma'lumotini olish
+        warehouse = Warehouse.objects.filter(index=str(index)).first()
+        if warehouse is None:
+            return Response(data="Information not found for the provided index", status=status.HTTP_404_NOT_FOUND)
+
         request = requests.get('https://prodapi.pochta.uz/api/v2/jurisdiction/choose/list', headers=headers)
         data_2 = request.json()
         from_latitude = ""
@@ -368,6 +437,9 @@ class CalculatorShipoxIndexView(APIView):
         x = [data]
         return Response(data=x, status=status.HTTP_200_OK)
 
+
+
+
 # class Postindexfilter(filters.FilterSet):
 #     warehouse_name = filters.CharFilter(field_name='warehouse_name', lookup_expr='icontains')
 #     class Meta:
@@ -377,18 +449,36 @@ class CalculatorShipoxIndexView(APIView):
 
 class PostIndexesView(APIView):
     permission_classes = [IsCustomUsersPost]
-
+    throttle_classes = [CustomUserThrottle, ]
     def get(self, request):
-        query = request.data.get('name')
-        if query is None or type(query) != str:
+        query = request.query_params.get('name')
+        if query is None:
             return Response(data="name is not correct", status=status.HTTP_400_BAD_REQUEST)
+        try:
+            query = int(query)
+        except ValueError:
+            return Response(data="Invalid name: Must be an int", status=status.HTTP_400_BAD_REQUEST)
         query_x = to_cyrillic(query)
         data = Warehouse.objects.filter(warehouse_name__icontains=query_x)
         serializer = WarehouseSerializer(data, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
+class PostIndexesAllView(APIView):
+    permission_classes = []
+    throttle_classes = [CustomUserThrottle, ]
+    def get(self, request):
+        data = Warehouse.objects.all()
 
+        # NaN qiymatlarni tekshirish va almashtirish
+        for obj in data:
+            if obj.warehouse_lat != obj.warehouse_lat:  # NaN ni aniqlash
+                obj.warehouse_lat = 0.0  # 0.0 bilan almashtirish
+            if obj.warehouse_lon != obj.warehouse_lon:
+                obj.warehouse_lon = 0.0
+
+        serializer = WarehouseSerializer(data, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 

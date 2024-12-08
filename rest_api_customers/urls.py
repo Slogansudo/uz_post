@@ -21,7 +21,7 @@ from .views import (Barcode, TrackIsAuth, RegisterUserView, MyProfileView, Users
                     SlidesAPIViewSet, SocialMediaAPIViewSet, EssentialFactsAPIViewSet, RatesAPIViewSet,
                     ServicesAPIViewSet, CharterSocietyAPIViewSet,
                     SecurityPapersAPIViewSet, FAQAPIViewSet, SiteSettingsAPIViewSet, CategoryPagesViewSet, ControlCategoryPageViewSet, TmuTrackAPIView,
-                    CalculatorShipoxView, OrderServicesView, Test, CategoryServicesAPIViewSet, MarksAsosiyAPIViewSet, CategoryFAQAPIViewSet)
+                    Test, CategoryServicesAPIViewSet, MarksAsosiyAPIViewSet, CategoryFAQAPIViewSet)
 
 from .views import CustomTokenObtainPairView
 
@@ -107,6 +107,4 @@ urlpatterns = [
     path('tracking/<slug:barcode>/', TrackIsAuth.as_view(), name='auth-tracking'),
     path('temutrack/<slug:barcode>/', TmuTrackAPIView.as_view(), name='temutrack'),
     path('userrequests/', UsersRequestsDetailView.as_view(), name='user_requests'),
-    path("calculator/order/", CalculatorShipoxView.as_view(), name='register-shipox'),
-    path("order/services/", OrderServicesView.as_view(), name='locations')
 ]

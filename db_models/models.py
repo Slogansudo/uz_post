@@ -290,6 +290,7 @@ class Marks(models.Model):
     marks_count_ru = models.CharField(max_length=100, null=True, blank=True)
     marks_count_uz = models.CharField(max_length=100, null=True, blank=True)
     years = models.BigIntegerField(null=True, blank=True)
+    count_number = models.BigIntegerField(null=True, blank=True)
     price_uz = models.CharField(max_length=100, null=True, blank=True)
     price_ru = models.CharField(max_length=100, null=True, blank=True)
     status = models.BooleanField(default=False)
